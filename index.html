@@ -1,0 +1,3966 @@
+<!doctype html><html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a14">
+<title>숨막히는 추리퀴즈 — 사라진 다이아몬드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&amp;family=Noto+Sans+KR:wght@400;500;700;900&amp;family=Special+Elite&amp;family=Oswald:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root{
+    --bg:#0a0a14;
+    --panel:#13131f;
+    --ink:#ece8e0;
+    --ink-dim:#9a958c;
+    --red:#e23048;
+    --red-bright:#ff4d63;
+    --gold:#d8a657;
+    --green:#5fa86b;
+    --case-blue:#6b8cae;
+    --paper:#e8e2d4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:#000;
+    color:var(--ink);
+    font-family:'Noto Sans KR',sans-serif;
+    display:flex;justify-content:center;align-items:center;
+    padding:16px;
+  }
+
+  /* ===== Container ===== */
+  #game{
+    width:100%;max-width:860px;
+    height:min(660px,94vh);
+    background:var(--panel);
+    border-radius:6px;
+    box-shadow:0 30px 80px rgba(0,0,0,.85), 0 0 0 1px rgba(226,48,72,.25);
+    display:flex;flex-direction:column;
+    position:relative;overflow:hidden;
+  }
+
+  /* film grain */
+  #game::after{
+    content:"";position:absolute;inset:0;pointer-events:none;z-index:60;
+    opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* ===== Status bar ===== */
+  #statusbar{
+    background:#0c0c16;
+    border-bottom:1px solid rgba(226,48,72,.35);
+    padding:11px 18px;
+    display:flex;justify-content:space-between;align-items:center;
+    z-index:20;flex-shrink:0;
+  }
+  #statusbar .title{
+    font-family:'Oswald',sans-serif;font-weight:700;
+    font-size:14px;letter-spacing:2px;color:var(--red);
+    display:flex;align-items:center;gap:8px;
+  }
+  #progress{
+    font-family:'Special Elite',monospace;
+    font-size:12px;color:var(--ink-dim);letter-spacing:1px;
+    border:1px solid rgba(154,149,140,.3);
+    padding:3px 10px;border-radius:2px;
+  }
+
+  /* ===== Stage ===== */
+  #stage{
+    flex-grow:1;position:relative;
+    background:#05050b;
+    overflow:hidden;
+  }
+  #scene-img{
+    position:absolute;inset:0;
+    background-size:cover;background-position:center;
+    transition:opacity .45s ease, transform 6s ease;
+    transform:scale(1.05);
+  }
+  #stage.playing #scene-img{transform:scale(1.12);}
+  /* vignette + flashlight */
+  #vignette{
+    position:absolute;inset:0;pointer-events:none;z-index:5;
+    background:
+      radial-gradient(ellipse 60% 55% at 50% 42%, rgba(0,0,0,0) 0%, rgba(5,5,11,.55) 62%, rgba(5,5,11,.92) 100%);
+  }
+
+  /* hint button */
+  #hint-btn{
+    position:absolute;top:16px;right:16px;z-index:30;
+    width:46px;height:46px;border-radius:50%;
+    background:var(--red);color:#fff;
+    border:2px solid rgba(255,255,255,.85);
+    font-size:18px;cursor:pointer;
+    box-shadow:0 0 18px rgba(226,48,72,.55);
+    transition:transform .2s, box-shadow .2s;
+  }
+  #hint-btn:hover{transform:scale(1.1) rotate(-8deg);box-shadow:0 0 28px rgba(226,48,72,.9);}
+  #hint-btn #hint-count{
+    position:absolute;right:-5px;top:-5px;min-width:19px;height:19px;padding:0 4px;
+    display:flex;align-items:center;justify-content:center;border-radius:999px;
+    background:var(--gold);color:#1a1408;border:2px solid #fff;
+    font:700 11px/1 'Oswald',sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.55);
+  }
+  #hint-btn.exhausted{background:#5d5960;border-color:rgba(255,255,255,.45);box-shadow:none;}
+  #hint-btn.exhausted #hint-count{background:#9a958c;color:#201c1b;border-color:#d7d0c3;}
+  #hint-btn .pulse{
+    position:absolute;inset:-2px;border-radius:50%;
+    border:2px solid var(--red);animation:pulse 2s infinite;
+  }
+  @keyframes pulse{0%{transform:scale(1);opacity:.7;}100%{transform:scale(1.6);opacity:0;}}
+
+  /* timer (boss) */
+  #timer{
+    position:absolute;top:16px;left:50%;transform:translateX(-50%);
+    z-index:30;display:none;
+    font-family:'Special Elite',monospace;
+    font-size:30px;font-weight:700;letter-spacing:3px;
+    color:var(--red-bright);
+    background:rgba(8,8,16,.9);
+    border:2px solid var(--red);
+    padding:6px 20px;border-radius:4px;
+    box-shadow:0 0 24px rgba(226,48,72,.6);
+  }
+  #timer.danger{animation:flash .6s infinite;}
+  @keyframes flash{50%{background:rgba(226,48,72,.35);}}
+
+  /* ===== Dialog ===== */
+  #dialog{
+    position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
+    width:calc(100% - 36px);
+    background:rgba(8,8,16,.96);
+    border:1px solid rgba(226,48,72,.55);
+    border-radius:6px;
+    padding:26px 22px 20px;
+    z-index:100;
+    box-shadow:0 14px 40px rgba(0,0,0,.85);
+    backdrop-filter:blur(2px);
+  }
+  #dialog.shake{animation:shake .5s;}
+  #dialog.dimmed{
+    opacity:.22;transform:translateX(-50%) translateY(8px) scale(.96);
+    transition:opacity .4s, transform .4s;
+    pointer-events:none;
+  }
+  @keyframes shake{
+    10%,90%{transform:translateX(-50%) translateX(-2px);}
+    20%,80%{transform:translateX(-50%) translateX(4px);}
+    30%,50%,70%{transform:translateX(-50%) translateX(-7px);}
+    40%,60%{transform:translateX(-50%) translateX(7px);}
+  }
+  #speaker{
+    position:absolute;top:-15px;left:20px;
+    font-family:'Oswald',sans-serif;font-weight:700;
+    font-size:14px;letter-spacing:1.5px;
+    color:#fff;background:var(--red);
+    padding:5px 14px;border-radius:3px;
+    box-shadow:0 3px 8px rgba(0,0,0,.6);
+  }
+  #speaker.sys{background:#2a2a3c;border:1px solid var(--ink-dim);}
+  #speaker.sosok{background:var(--case-blue);}
+  #speaker.wrong{background:#7a2230;}
+  #dialog-text{
+    font-family:'Noto Serif KR',serif;
+    font-size:16.5px;line-height:1.72;color:var(--ink);
+    min-height:54px;
+  }
+  #dialog-text .em{color:var(--gold);font-weight:700;}
+  #dialog-text .pp{
+    color:var(--red-bright);font-weight:700;
+    border-bottom:2px dotted var(--red-bright);
+  }
+  /* typewriter blinking caret */
+  #dialog-text .caret{
+    display:inline-block;width:9px;height:1.05em;
+    background:var(--red);margin-left:1px;
+    vertical-align:-2px;
+    animation:blink .6s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0;}}
+  #dialog-text.typing{cursor:pointer;}
+
+  /* choices */
+  #choices{display:flex;flex-direction:column;gap:9px;margin-top:16px;}
+  .choice{
+    background:rgba(236,232,224,.04);
+    color:var(--ink);
+    border:1px solid rgba(226,48,72,.45);
+    border-left:3px solid var(--red);
+    padding:13px 16px;border-radius:4px;
+    font-size:15px;font-family:'Noto Sans KR',sans-serif;
+    text-align:left;cursor:pointer;
+    transition:all .18s ease;
+    display:flex;align-items:center;gap:10px;
+    animation:fadein .3s;
+  }
+  .choice .tag{
+    font-family:'Oswald',sans-serif;font-weight:700;
+    color:var(--red);flex-shrink:0;
+  }
+  .choice:hover{
+    background:var(--red);color:#fff;
+    transform:translateX(6px);
+    box-shadow:-3px 0 0 var(--red-bright);
+  }
+  .choice:hover .tag{color:#fff;}
+  .choice.proceed{
+    border-color:rgba(216,166,87,.55);border-left-color:var(--gold);
+    justify-content:center;text-align:center;
+  }
+  .choice.proceed:hover{background:var(--gold);color:#1a1408;box-shadow:-3px 0 0 #f0c074;}
+  .choice.proceed .tag{color:var(--gold);}
+
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  /* input (boss) */
+  #input-area{display:none;flex-direction:column;gap:10px;margin-top:16px;}
+  #clue-words{
+    display:flex;flex-wrap:wrap;gap:7px;margin-bottom:2px;
+  }
+  .scramble-sentence{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px;
+    padding:14px 10px;background:rgba(216,166,87,.08);
+    border:1px solid rgba(216,166,87,.35);border-radius:5px;
+    line-height:1.8;
+  }
+  .scramble-fixed{color:var(--ink);font-weight:700;}
+  .scramble-slot{
+    min-width:76px;min-height:38px;padding:6px 12px;
+    border:2px dashed var(--red);border-radius:4px;
+    background:rgba(226,48,72,.10);color:var(--red-bright);
+    font-weight:700;cursor:pointer;
+  }
+  .scramble-slot.filled{border-style:solid;background:rgba(95,168,107,.18);border-color:var(--green);color:#b9e7bf;}
+  .scramble-pool{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
+  .scramble-card{
+    padding:10px 18px;border:1px solid var(--case-blue);border-radius:4px;
+    background:rgba(107,140,174,.20);color:#d8e8f5;font-size:16px;
+    font-weight:700;cursor:pointer;transition:transform .15s, opacity .15s, background .15s;
+  }
+  .scramble-card:hover{transform:translateY(-2px);background:rgba(107,140,174,.38);}
+  .scramble-card.used{opacity:.35;cursor:default;transform:none;}
+  .scramble-help{text-align:center;color:var(--ink-dim);font-size:12px;}
+  .clue{
+    font-family:'Special Elite',monospace;
+    background:rgba(216,166,87,.14);
+    border:1px dashed var(--gold);
+    color:var(--gold);
+    padding:5px 11px;border-radius:3px;font-size:14px;
+  }
+  /* "torn / damaged" clue: subject is partly visible but obscured.
+     Renders with a jagged right edge, smudged/redacted text, and a ? badge.  */
+  .clue.missing{
+    position:relative;
+    background:rgba(226,48,72,.10);
+    border:1px dashed var(--red);
+    color:var(--red-bright);
+    padding-right:26px;
+    /* jagged right edge — looks like a torn paper card */
+    clip-path:polygon(
+      0 0, 100% 0, 92% 18%, 100% 36%, 90% 55%, 98% 72%, 88% 90%, 100% 100%, 0 100%
+    );
+  }
+  .clue.missing .redacted{
+    /* the obscured letters: heavy strikethrough box, like a redaction */
+    display:inline-block;
+    background:linear-gradient(180deg, rgba(226,48,72,.45), rgba(226,48,72,.25));
+    color:transparent;
+    border-radius:2px;
+    padding:0 2px;
+    letter-spacing:.5px;
+  }
+  .clue.missing .qmark{
+    position:absolute;top:-7px;right:-7px;
+    width:18px;height:18px;
+    background:var(--red);
+    color:#fff;border-radius:50%;
+    font-family:'Oswald',sans-serif;font-weight:700;font-size:12px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 2px var(--panel), 0 2px 6px rgba(0,0,0,.6);
+  }
+  /* "bare verb" clue: a bare infinitive that the student must transform
+     into the passive voice themselves. Distinct cyan/blue palette so it
+     reads as a TASK card rather than a finished phrase. */
+  .clue.verb{
+    position:relative;
+    background:rgba(107,140,174,.16);
+    border:1.5px dashed var(--case-blue);
+    color:#a9c5e0;
+    padding-right:14px;
+    padding-top:11px;
+    font-style:italic;
+    letter-spacing:1px;
+  }
+  .clue.verb .verb-tag{
+    position:absolute;
+    top:-9px;
+    left:8px;
+    background:var(--case-blue);
+    color:#fff;
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:9px;
+    font-style:normal;
+    letter-spacing:1px;
+    padding:2px 7px;
+    border-radius:2px;
+    box-shadow:0 0 0 2px var(--panel);
+    font-weight:500;
+  }
+  #final-input{
+    padding:13px 14px;font-size:16px;
+    border:2px solid var(--red);border-radius:4px;
+    background:rgba(236,232,224,.06);color:#fff;
+    font-family:'Noto Sans KR',sans-serif;
+  }
+  #final-input::placeholder{color:rgba(236,232,224,.4);}
+  #submit-btn{
+    padding:13px;font-size:15px;cursor:pointer;
+    font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:2px;
+    background:var(--red);color:#fff;border:none;border-radius:4px;
+    transition:background .2s;
+  }
+  #submit-btn:hover{background:var(--red-bright);}
+
+  /* hint modal */
+  #hint-modal{
+    display:none;position:absolute;inset:0;z-index:80;
+    background:rgba(3,3,8,.82);
+    align-items:center;justify-content:center;
+  }
+  #hint-card{
+    width:min(420px,86%);
+    background:var(--panel);
+    border:1px solid var(--gold);
+    border-top:4px solid var(--gold);
+    border-radius:6px;padding:26px 24px;
+    box-shadow:0 20px 60px rgba(0,0,0,.8);
+  }
+  #hint-card h3{
+    font-family:'Oswald',sans-serif;font-weight:700;
+    color:var(--gold);letter-spacing:1.5px;
+    margin-bottom:14px;display:flex;align-items:center;gap:9px;
+  }
+  #hint-card p{font-size:14.5px;line-height:1.7;color:var(--ink);margin-bottom:20px;font-family:'Noto Serif KR',serif;}
+  #hint-card button{
+    width:100%;padding:11px;cursor:pointer;
+    font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:1.5px;
+    background:var(--gold);color:#1a1408;border:none;border-radius:4px;
+  }
+
+  /* progress dots */
+  #dots{
+    position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+    display:flex;gap:6px;z-index:26;
+  }
+  .dot{width:6px;height:6px;border-radius:50%;background:rgba(154,149,140,.3);transition:background .3s;}
+  .dot.done{background:var(--gold);}
+  .dot.active{background:var(--red);box-shadow:0 0 8px var(--red);}
+
+  /* ===== Investigation: clickable clue hotspots ===== */
+  #hotspot-layer{
+    position:absolute;inset:0;z-index:28;
+    pointer-events:none;       /* layer transparent; hotspots re-enable */
+  }
+  .hotspot{
+    position:absolute;
+    width:64px;height:64px;
+    transform:translate(-50%,-50%) scale(.5);
+    border-radius:50%;cursor:pointer;
+    pointer-events:auto;
+    border:2px solid rgba(216,166,87,.9);
+    background:radial-gradient(circle,rgba(216,166,87,.28) 0%,rgba(216,166,87,.05) 60%,transparent 72%);
+    transition:transform .25s ease, opacity .25s ease;
+    opacity:0;                 /* hidden until hint button reveals them */
+  }
+  .hotspot.shown{
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+  }
+  .hotspot::before{
+    content:"";position:absolute;inset:-7px;border-radius:50%;
+    border:2px solid var(--gold);
+    animation:huntpulse 1.9s infinite ease-out;
+  }
+  @keyframes huntpulse{0%{transform:scale(.8);opacity:.8;}100%{transform:scale(1.7);opacity:0;}}
+  .hotspot.shown:hover{transform:translate(-50%,-50%) scale(1.12);}
+  .hotspot .lens{
+    position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    color:var(--gold);font-size:20px;
+    text-shadow:0 1px 3px #000;
+  }
+  .hotspot.found{
+    border-color:rgba(95,168,107,.9);
+    background:radial-gradient(circle,rgba(95,168,107,.22) 0%,transparent 70%);
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+  }
+  .hotspot.found::before{animation:none;border-color:transparent;}
+  .hotspot.found .lens{color:var(--green);}
+
+  /* hub targets — larger zones, labels appear on hover */
+  .hub-target{width:80px;height:80px;}
+  .hub-label{
+    position:absolute;top:100%;left:50%;
+    transform:translateX(-50%) translateY(6px);
+    background:rgba(8,8,16,.92);
+    border:1px solid var(--gold);
+    color:var(--ink);
+    padding:3px 10px;border-radius:3px;
+    font-family:'Noto Sans KR',sans-serif;font-size:12px;
+    white-space:nowrap;
+    opacity:0;transition:opacity .2s;
+    pointer-events:none;
+  }
+  .hub-target.shown:hover .hub-label{opacity:1;}
+  .hub-target.done{
+    border-color:rgba(95,168,107,.9);
+    background:radial-gradient(circle,rgba(95,168,107,.18) 0%,transparent 70%);
+    cursor:default;
+  }
+  .hub-target.done::before{animation:none;border-color:transparent;}
+  .hub-target.done .lens{color:var(--green);}
+  .hub-target.done::after{
+    content:"\\f00c";    /* font-awesome check */
+    font-family:"Font Awesome 6 Free";font-weight:900;
+    position:absolute;top:-4px;right:-4px;
+    background:var(--green);color:#0a0a14;
+    width:22px;height:22px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;
+  }
+
+  /* zoom-in inspection panel */
+  #zoom{
+    display:none;position:absolute;inset:0;z-index:70;
+    background:rgba(3,3,8,.9);
+    align-items:center;justify-content:center;
+    flex-direction:column;gap:0;
+    padding:20px;
+  }
+  #zoom.show{display:flex;animation:fadein .25s;}
+  #zoom-frame{
+    width:min(340px,72%);
+    aspect-ratio:1/1;
+    border:3px solid var(--gold);
+    border-radius:8px;
+    background-size:520%;          /* magnified */
+    background-repeat:no-repeat;
+    box-shadow:0 0 0 6px rgba(8,8,16,.9), 0 18px 50px rgba(0,0,0,.8);
+    position:relative;
+  }
+  #zoom-frame::after{       /* camera-lens corner brackets */
+    content:"";position:absolute;inset:10px;
+    border:1px solid rgba(216,166,87,.5);
+    border-radius:4px;pointer-events:none;
+  }
+  #zoom-reticle{
+    position:absolute;top:50%;left:50%;
+    width:46px;height:46px;transform:translate(-50%,-50%);
+    pointer-events:none;
+  }
+  #zoom-reticle::before,#zoom-reticle::after{
+    content:"";position:absolute;background:rgba(226,48,72,.85);
+  }
+  #zoom-reticle::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-50%);}
+  #zoom-reticle::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-50%);}
+  #zoom-card{
+    width:min(420px,86%);
+    background:var(--panel);
+    border:1px solid var(--gold);
+    border-radius:6px;
+    margin-top:18px;padding:18px 20px;
+    box-shadow:0 14px 40px rgba(0,0,0,.7);
+  }
+  #zoom-tag{
+    font-family:'Oswald',sans-serif;font-weight:700;
+    color:var(--gold);letter-spacing:1.5px;font-size:13px;
+    margin-bottom:8px;display:flex;align-items:center;gap:7px;
+  }
+  #zoom-name{
+    font-family:'Noto Serif KR',serif;font-weight:700;
+    font-size:17px;color:var(--ink);margin-bottom:6px;
+  }
+  #zoom-obs{font-size:14px;line-height:1.65;color:var(--ink-dim);font-family:'Noto Sans KR',sans-serif;}
+  #zoom-obs .key{color:var(--red-bright);font-weight:700;}
+  #zoom-close{
+    margin-top:14px;width:100%;padding:10px;cursor:pointer;
+    font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:1.5px;
+    background:var(--gold);color:#1a1408;border:none;border-radius:4px;
+  }
+
+  /* investigation prompt banner */
+  #hunt-banner{
+    position:absolute;top:14px;left:50%;transform:translateX(-50%);
+    z-index:24;display:none;
+    background:rgba(8,8,16,.92);
+    border:1px solid rgba(216,166,87,.6);
+    border-radius:30px;
+    padding:8px 18px;
+    font-family:'Noto Sans KR',sans-serif;font-size:13px;
+    color:var(--gold);
+    white-space:nowrap;
+  }
+  #hunt-banner.show{display:block;animation:fadein .3s;}
+  #hunt-banner b{color:var(--ink);}
+
+
+
+  /* ===== Ending celebration: diamond shimmer + confetti fireworks ===== */
+  /* When .win is on stage, the scene image gets a slow shimmer overlay.
+     The image itself shows two cute detectives holding a glowing diamond,
+     so a soft radial pulse over the whole scene reads as "the diamond
+     glows" without needing pixel-perfect alignment to where the diamond
+     sits in the artwork.                                                 */
+  .win #scene-img{filter:saturate(1.15);}
+  .win #scene-img::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:radial-gradient(
+      circle at 50% 56%,
+      rgba(180,230,255,.55) 0%,
+      rgba(140,210,255,.32) 8%,
+      rgba(120,200,255,.18) 16%,
+      rgba(255,255,255,0) 32%
+    );
+    mix-blend-mode:screen;
+    animation:diamondPulse 1.8s ease-in-out infinite;
+    z-index:2;
+  }
+  @keyframes diamondPulse{
+    0%,100%{opacity:.55;transform:scale(1);}
+    50%{opacity:1;transform:scale(1.08);}
+  }
+  /* Sparkle highlights that bloom and fade around the diamond */
+  .win #scene-img::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:
+      radial-gradient(circle at 47% 55%, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 1.5%),
+      radial-gradient(circle at 53% 52%, rgba(255,255,255,.8) 0%, rgba(255,255,255,0) 1.2%),
+      radial-gradient(circle at 50% 60%, rgba(180,230,255,.7) 0%, rgba(180,230,255,0) 2%);
+    animation:sparkle 1.4s ease-in-out infinite alternate;
+    z-index:3;
+    mix-blend-mode:screen;
+  }
+  @keyframes sparkle{
+    0%{opacity:.4;}
+    100%{opacity:1;}
+  }
+
+  /* Confetti / firework container — fills the scene-img area */
+  #confetti-layer{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:15;
+    display:none;
+  }
+  .win #confetti-layer{display:block;}
+
+  /* Individual confetti piece */
+  .confetti{
+    position:absolute;
+    top:-20px;
+    width:10px;
+    height:14px;
+    opacity:0;
+    border-radius:1px;
+    animation:confettiFall linear forwards;
+  }
+  @keyframes confettiFall{
+    0%{
+      transform:translateY(-10px) rotate(0deg);
+      opacity:0;
+    }
+    8%{opacity:1;}
+    100%{
+      transform:translateY(620px) rotate(720deg);
+      opacity:1;
+    }
+  }
+
+  /* Firework burst — radiating sparks from a center point */
+  .firework{
+    position:absolute;
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    pointer-events:none;
+    animation:fireworkBurst 1.2s ease-out forwards;
+  }
+  @keyframes fireworkBurst{
+    0%{
+      transform:translate(0,0) scale(1);
+      opacity:1;
+    }
+    100%{
+      transform:translate(var(--fx), var(--fy)) scale(.3);
+      opacity:0;
+    }
+  }
+
+  /* The dialog speaker badge / progress bar get a gentle gold glow */
+  .win #speaker{
+    box-shadow:0 0 18px rgba(216,166,87,.5);
+    animation:goldGlow 2s ease-in-out infinite;
+  }
+  @keyframes goldGlow{
+    0%,100%{box-shadow:0 0 18px rgba(216,166,87,.5);}
+    50%{box-shadow:0 0 28px rgba(216,166,87,.9);}
+  }
+
+
+
+  /* ===== Life counter (3-strike system) ===== */
+  #life-counter{
+    position:absolute;
+    top:14px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:30;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:rgba(12,12,22,.85);
+    border:1px solid rgba(226,48,72,.35);
+    padding:6px 14px;
+    border-radius:2px;
+    font-family:'Special Elite',monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:2px;
+    pointer-events:none;
+    backdrop-filter:blur(2px);
+  }
+  #life-counter .label{color:rgba(154,149,140,.7);}
+  #life-counter .pip{
+    width:10px;height:10px;
+    border-radius:50%;
+    border:1.5px solid var(--red);
+    background:var(--red);
+    box-shadow:0 0 6px rgba(226,48,72,.5);
+    transition:all .4s ease;
+  }
+  #life-counter .pip.lost{
+    background:transparent;
+    border-color:rgba(154,149,140,.4);
+    box-shadow:none;
+  }
+  #life-counter.flash{animation:lifeFlash .6s ease;}
+  @keyframes lifeFlash{
+    0%{background:rgba(226,48,72,.5);transform:translateX(-50%) scale(1.15);}
+    100%{background:rgba(12,12,22,.85);transform:translateX(-50%) scale(1);}
+  }
+
+  /* ===== Credit signature ===== */
+  #credit{
+    position:absolute;
+    bottom:8px;
+    right:12px;
+    z-index:25;
+    font-family:'Special Elite',monospace;
+    font-size:10px;
+    color:rgba(154,149,140,.45);
+    letter-spacing:2px;
+    pointer-events:none;
+    user-select:none;
+  }
+  #credit .by{opacity:.6;}
+  #credit .name{color:rgba(216,166,87,.55);}
+
+  /* ===== Game Over Screen ===== */
+  #gameover-screen{
+    position:absolute;
+    inset:0;
+    z-index:180;
+    background:radial-gradient(ellipse at center, #1a0608 0%, #000 80%);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:30px;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity .8s ease, visibility .8s;
+  }
+  #gameover-screen.show{
+    opacity:1;
+    visibility:visible;
+  }
+  #gameover-screen::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    opacity:.08;
+    mix-blend-mode:overlay;
+    pointer-events:none;
+  }
+  #gameover-stamp{
+    font-family:'Oswald',sans-serif;
+    font-size:64px;
+    font-weight:700;
+    letter-spacing:14px;
+    color:var(--red);
+    border:4px solid var(--red);
+    padding:18px 42px;
+    transform:rotate(-6deg);
+    margin-bottom:30px;
+    text-shadow:0 0 20px rgba(226,48,72,.6);
+    box-shadow:0 0 30px rgba(226,48,72,.3), inset 0 0 30px rgba(226,48,72,.1);
+    animation:stampSlam .6s cubic-bezier(.36,.07,.19,.97);
+  }
+  @keyframes stampSlam{
+    0%{transform:rotate(-6deg) scale(3);opacity:0;}
+    60%{transform:rotate(-6deg) scale(.9);opacity:1;}
+    80%{transform:rotate(-6deg) scale(1.05);}
+    100%{transform:rotate(-6deg) scale(1);}
+  }
+  #gameover-title{
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:20px;
+    color:var(--ink);
+    margin-bottom:14px;
+    letter-spacing:3px;
+    animation:gameoverFadeIn 1.5s ease;
+  }
+  #gameover-msg{
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:14px;
+    color:var(--ink-dim);
+    line-height:1.7;
+    max-width:480px;
+    margin-bottom:30px;
+    animation:gameoverFadeIn 2s ease;
+  }
+  @keyframes gameoverFadeIn{
+    from{opacity:0;transform:translateY(10px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  #gameover-restart{
+    background:transparent;
+    border:1.5px solid var(--gold);
+    color:var(--gold);
+    font-family:'Oswald',sans-serif;
+    font-size:14px;
+    letter-spacing:4px;
+    padding:12px 32px;
+    border-radius:2px;
+    cursor:pointer;
+    transition:all .3s ease;
+    text-transform:uppercase;
+    animation:gameoverFadeIn 2.5s ease;
+  }
+  #gameover-restart:hover{
+    background:var(--gold);
+    color:#0a0a14;
+    box-shadow:0 0 24px rgba(216,166,87,.6);
+    letter-spacing:6px;
+  }
+
+  /* ===== Article-missing notice (inline toast on the boss screen) ===== */
+  #article-notice{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%, -50%) scale(.92);
+    z-index:90;
+    width:min(440px, 88%);
+    background:linear-gradient(180deg, #1a2233 0%, #0f1622 100%);
+    border:1.5px solid var(--gold);
+    border-top:4px solid var(--gold);
+    border-radius:4px;
+    padding:18px 20px 16px 20px;
+    box-shadow:0 20px 50px rgba(0,0,0,.7), 0 0 30px rgba(216,166,87,.2);
+    opacity:0;
+    animation:noticeIn .35s ease forwards;
+    font-family:'Noto Sans KR',sans-serif;
+  }
+  #article-notice.hiding{
+    animation:noticeOut .35s ease forwards;
+  }
+  @keyframes noticeIn{
+    to{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  }
+  @keyframes noticeOut{
+    to{opacity:0;transform:translate(-50%,-50%) scale(.92);}
+  }
+  #article-notice .an-tag{
+    display:inline-block;
+    background:var(--gold);
+    color:#0a0a14;
+    font-family:'Oswald',sans-serif;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:3px;
+    padding:3px 10px;
+    border-radius:2px;
+    margin-bottom:10px;
+  }
+  #article-notice .an-body{
+    color:var(--ink);
+    font-size:14px;
+    line-height:1.6;
+    margin-bottom:14px;
+  }
+  #article-notice .an-body b{
+    color:var(--gold);
+    font-weight:700;
+  }
+  #article-notice .an-correct{
+    display:block;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed rgba(216,166,87,.3);
+    font-family:'Special Elite',monospace;
+    font-size:13px;
+    color:var(--green);
+    letter-spacing:.5px;
+  }
+  #article-notice .an-correct b{
+    color:#9be4a8;
+    text-decoration:underline;
+  }
+  #article-notice .an-close{
+    display:block;
+    margin:0 auto;
+    background:transparent;
+    border:1px solid var(--gold);
+    color:var(--gold);
+    font-family:'Oswald',sans-serif;
+    font-size:13px;
+    letter-spacing:3px;
+    padding:8px 22px;
+    border-radius:2px;
+    cursor:pointer;
+    transition:all .25s ease;
+  }
+  #article-notice .an-close:hover{
+    background:var(--gold);
+    color:#0a0a14;
+    letter-spacing:5px;
+  }
+
+  /* ===== Opening Screen ===== */
+  #opening-screen{
+    position:absolute;
+    inset:0;
+    z-index:200;
+    background:#000;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    align-items:center;
+    padding:0 0 50px 0;
+    overflow:hidden;
+    cursor:pointer;
+    transition:opacity 1.2s ease, visibility 1.2s;
+  }
+  #opening-screen.hidden{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+  }
+  #opening-bg{
+    position:absolute;
+    inset:0;
+    background-image:url("image_01.png?v=20261028_start");
+    background:
+      radial-gradient(circle at 50% 28%, rgba(226,48,72,.28), transparent 34%),
+      radial-gradient(circle at 18% 78%, rgba(216,166,87,.16), transparent 28%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,.025) 0 1px, transparent 1px 9px),
+      linear-gradient(135deg, #24131d 0%, #0b0b16 52%, #1c140e 100%);
+    background-size:cover;
+    background-position:center;
+    z-index:1;
+    animation:openingZoom 16s ease-out infinite alternate;
+  }
+  #opening-bg::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 55%,
+      rgba(0,0,0,.4) 78%,
+      rgba(10,10,20,.85) 100%
+    );
+  }
+  @keyframes openingZoom{
+    from{transform:scale(1);}
+    to{transform:scale(1.06);}
+  }
+  #opening-flash{
+    position:absolute;
+    inset:0;
+    background:rgba(255,255,255,0);
+    z-index:5;
+    pointer-events:none;
+    animation:openingLightning 7s ease-in-out infinite;
+  }
+  @keyframes openingLightning{
+    0%, 88%, 100%{background:rgba(255,255,255,0);}
+    90%{background:rgba(180,200,255,.18);}
+    91%{background:rgba(255,255,255,0);}
+    93%{background:rgba(180,200,255,.28);}
+    94%{background:rgba(255,255,255,0);}
+  }
+  #opening-content{
+    position:relative;
+    z-index:10;
+    text-align:center;
+    animation:openingFadeIn 1.8s ease-out;
+  }
+  @keyframes openingFadeIn{
+    from{opacity:0;transform:translateY(20px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  #opening-tag{
+    font-family:'Special Elite',monospace;
+    font-size:12px;
+    letter-spacing:6px;
+    color:var(--red);
+    margin-bottom:14px;
+    text-shadow:0 0 8px rgba(226,48,72,.5);
+  }
+  #opening-tag::before,
+  #opening-tag::after{
+    content:"◆";
+    margin:0 12px;
+    opacity:.6;
+  }
+  #opening-sub{
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:14px;
+    color:var(--ink-dim);
+    letter-spacing:3px;
+    margin-bottom:24px;
+    font-weight:300;
+  }
+  #opening-start{
+    background:transparent;
+    border:1.5px solid var(--gold);
+    color:var(--gold);
+    font-family:'Oswald',sans-serif;
+    font-size:15px;
+    letter-spacing:5px;
+    padding:13px 38px;
+    border-radius:2px;
+    cursor:pointer;
+    transition:all .3s ease;
+    text-transform:uppercase;
+    position:relative;
+    overflow:hidden;
+  }
+  #opening-start:hover{
+    background:var(--gold);
+    color:#0a0a14;
+    box-shadow:0 0 24px rgba(216,166,87,.6);
+    letter-spacing:7px;
+  }
+  #opening-start .pulse-dot{
+    display:inline-block;
+    width:6px;height:6px;
+    background:var(--red);
+    border-radius:50%;
+    margin-right:10px;
+    vertical-align:middle;
+    animation:openingPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes openingPulse{
+    0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(226,48,72,.7);}
+    50%{opacity:.5;box-shadow:0 0 0 8px rgba(226,48,72,0);}
+  }
+  #opening-hint{
+    margin-top:18px;
+    font-family:'Special Elite',monospace;
+    font-size:11px;
+    color:rgba(154,149,140,.7);
+    letter-spacing:2px;
+  }
+
+  /* ===================================================================
+     ===== Mobile / Tablet Responsive Layout =====
+     Tested at 360–430px (phones), 768px (tablets), and landscape.
+     ================================================================ */
+
+  /* prevent iOS auto-zoom on input focus (font-size must be ≥16px) */
+  /* prevent text selection / callouts that interfere with touch UI */
+  *{
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+  }
+  #dialog-text, #hint-card p, .clue, #final-input{
+    -webkit-user-select:text;
+    user-select:text;
+  }
+
+  /* ============================================================
+     PHONES (portrait) - max-width: 640px
+     Core fix: scene images use CONTAIN so they're never cropped.
+     Stage gets a fixed aspect ratio so images render naturally.
+     ============================================================ */
+  @media (max-width: 640px){
+    body{
+      padding:0;
+      align-items:stretch;
+      justify-content:stretch;
+      padding:env(safe-area-inset-top) env(safe-area-inset-right)
+              env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    #game{
+      width:100%;
+      max-width:100%;
+      height:100vh;
+      height:100dvh;
+      border-radius:0;
+      box-shadow:none;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* status bar slimmer */
+    #statusbar{padding:8px 12px;flex-shrink:0;}
+    #statusbar .title{font-size:11px;letter-spacing:1.5px;gap:6px;}
+    #statusbar .title i{font-size:13px;}
+    #progress{font-size:10px;padding:2px 7px;letter-spacing:.5px;}
+
+    /* hint button */
+    #hint-btn{
+      top:10px;right:10px;
+      width:40px;height:40px;font-size:15px;
+    }
+
+    /* boss timer */
+    #timer{
+      top:10px;font-size:22px;padding:4px 14px;letter-spacing:2px;
+    }
+
+    /* === STAGE: fixed image area at top, dialog flows below === */
+    #stage{
+      flex:1 1 auto;
+      min-height:0;          /* allow flex shrinking */
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
+    /* === SCENE IMAGE: maintain aspect ratio so hotspots perfectly align === */
+    #scene-img{
+      position:relative;     /* take normal flow space */
+      width:100%;
+      height:auto;
+      aspect-ratio:4 / 3;    /* lock aspect ratio to match PC environment */
+      flex:none;
+      inset:auto;
+      background-size:cover !important;
+      background-repeat:no-repeat;
+      background-position:center center;
+      background-color:#05050b;
+      transform:none !important;
+      transition:opacity .45s ease;
+    }
+    /* Disable the playing-state zoom on mobile */
+    #stage.playing #scene-img{transform:none !important;}
+
+    /* All overlays must exactly match the scene-img size and ratio */
+    #hotspot-layer, #vignette, #confetti-layer {
+      position:absolute;
+      top:0;left:0;right:0;
+      width:100%;
+      height:auto;
+      aspect-ratio:4 / 3;
+      bottom:auto;
+    }
+
+    /* Vignette only over the image area */
+    #vignette{
+      pointer-events:none;
+      z-index:5;
+      background:radial-gradient(
+        ellipse 70% 60% at 50% 50%,
+        rgba(0,0,0,0) 0%,
+        rgba(5,5,11,.35) 75%,
+        rgba(5,5,11,.7) 100%
+      );
+    }
+
+    /* === DIALOG: now in normal flow below the image === */
+    #dialog{
+      position:relative;
+      left:auto;
+      bottom:auto;
+      transform:none !important;
+      width:calc(100% - 16px);
+      margin:14px 8px 10px 8px;
+      padding:18px 14px 14px;
+      border-radius:5px;
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+    }
+    #dialog.shake{animation:shakeMobile .5s;}
+    @keyframes shakeMobile{
+      10%,90%{transform:translateX(-2px);}
+      20%,80%{transform:translateX(4px);}
+      30%,50%,70%{transform:translateX(-7px);}
+      40%,60%{transform:translateX(7px);}
+    }
+    #dialog.dimmed{
+      opacity:.22;
+      transform:translateY(8px) scale(.96) !important;
+      pointer-events:none;
+    }
+    #dialog::-webkit-scrollbar{width:4px;}
+    #dialog::-webkit-scrollbar-thumb{
+      background:rgba(226,48,72,.4);border-radius:2px;
+    }
+
+    #speaker{
+      top:-12px;left:14px;
+      font-size:11px;letter-spacing:1px;
+      padding:4px 10px;
+    }
+    #dialog-text{
+      font-size:14px;
+      line-height:1.65;
+      min-height:42px;
+    }
+
+    /* choices */
+    #choices{gap:7px;margin-top:12px;}
+    .choice{
+      padding:13px 12px;
+      font-size:13.5px;
+      min-height:46px;
+      border-left-width:3px;
+      gap:8px;
+    }
+    .choice:hover{transform:none;}
+
+    /* input area */
+    #input-area{margin-top:12px;gap:8px;}
+    #clue-words{gap:5px;}
+    .clue{font-size:12.5px;padding:4px 9px;}
+    .clue.missing{padding-right:22px;}
+    #final-input{font-size:16px;padding:11px 12px;}
+    #submit-btn{
+      padding:13px;
+      font-size:14px;
+      letter-spacing:1.5px;
+      min-height:46px;
+    }
+
+    /* hotspots */
+    .hotspot{width:54px;height:54px;}
+    .hub-target{width:68px;height:68px;}
+    .hub-target.shown .hub-label{opacity:.85;}
+    .hub-label{font-size:11px;padding:2px 8px;}
+
+    /* hint modal */
+    #hint-card{
+      width:92%;
+      max-height:85vh;
+      max-height:85dvh;
+      overflow-y:auto;
+      padding:20px 18px;
+    }
+    #hint-card h3{font-size:14px;letter-spacing:1px;margin-bottom:10px;}
+    #hint-card p{font-size:13.5px;line-height:1.6;margin-bottom:16px;}
+    #hint-card button{padding:13px;font-size:13px;}
+
+    /* === OPENING SCREEN: same contain approach === */
+    #opening-screen{padding:0 0 32px 0;}
+    #opening-bg{
+      background-size:contain;
+      background-repeat:no-repeat;
+      background-position:center 30%;
+    }
+    #opening-tag{font-size:10px;letter-spacing:3px;margin-bottom:10px;}
+    #opening-tag::before, #opening-tag::after{margin:0 7px;}
+    #opening-sub{font-size:12px;letter-spacing:1.5px;margin-bottom:18px;padding:0 16px;}
+    #opening-start{
+      font-size:13px;letter-spacing:3px;padding:12px 28px;
+      min-height:46px;
+    }
+    #opening-start:hover{letter-spacing:3px;}
+    #opening-hint{font-size:10px;letter-spacing:1px;margin-top:14px;padding:0 16px;}
+
+    /* ending image already inherits contain — no extra rule needed */
+
+    /* progress dots */
+    .dot{width:5px;height:5px;}
+
+    /* clue card popup */
+    .clue-card, #clue-popup{
+      width:92% !important;
+      max-width:92% !important;
+      max-height:80vh;
+      max-height:80dvh;
+      overflow-y:auto;
+      padding:18px 16px !important;
+    }
+
+    /* article notice */
+    #article-notice{
+      max-height:90vh;
+      max-height:90dvh;
+      overflow-y:auto;
+    }
+
+    /* confetti layer stays over image area only */
+    #confetti-layer{
+      position:absolute;
+      top:0;left:0;right:0;
+      height:42vh;
+      height:42dvh;
+      pointer-events:none;
+      z-index:6;
+    }
+
+    /* hotspot layer must stay over image area, not whole stage */
+    #hotspot-layer{
+      position:absolute;
+      top:0;left:0;right:0;
+      height:42vh;
+      height:42dvh;
+      inset:auto;
+      pointer-events:none;
+    }
+  }
+
+  /* ============================================================
+     Very small phones (iPhone SE, narrow Androids) - max 380px
+     ============================================================ */
+  @media (max-width: 380px){
+    #scene-img{
+      flex:0 0 38vh;
+      flex:0 0 38dvh;
+    }
+    #vignette, #confetti-layer, #hotspot-layer{
+      height:38vh;
+      height:38dvh;
+    }
+    #dialog{
+      padding:16px 12px 12px;
+    }
+    #dialog-text{font-size:13px;line-height:1.6;}
+    .choice{font-size:12.5px;padding:11px 10px;min-height:42px;}
+    #statusbar .title{font-size:10px;letter-spacing:1px;}
+    #statusbar{padding:7px 10px;}
+    #opening-sub{font-size:11px;}
+    #opening-start{font-size:12px;padding:11px 24px;}
+    #speaker{font-size:10px;padding:3px 8px;}
+  }
+
+  /* ============================================================
+     Landscape phones (and tablets in landscape <= 500px tall)
+     ============================================================ */
+  @media (max-height: 500px) and (orientation: landscape){
+    #game{
+      height:100vh;
+      height:100dvh;
+      flex-direction:row;        /* image left, dialog right */
+    }
+    #statusbar{
+      position:absolute;
+      top:0;left:0;right:0;
+      z-index:30;
+      padding:5px 10px;
+      background:rgba(12,12,22,.85);
+    }
+    #stage{
+      flex:1 1 50%;
+      flex-direction:column;
+    }
+    #scene-img{
+      flex:1 1 auto;
+      height:100%;
+      background-size:contain !important;
+      background-repeat:no-repeat;
+      background-position:center center;
+      transform:none !important;
+    }
+    #vignette{
+      position:absolute;
+      inset:0;
+      height:auto;
+    }
+    #dialog{
+      position:relative;
+      left:auto;bottom:auto;
+      transform:none !important;
+      flex:0 0 48%;
+      width:auto;
+      margin:34px 8px 8px 4px;
+      padding:14px 14px 12px;
+      max-height:none;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    #speaker{top:-10px;font-size:10px;padding:3px 8px;}
+    #dialog-text{font-size:13px;min-height:28px;line-height:1.5;}
+    #choices{gap:5px;margin-top:8px;}
+    .choice{padding:8px 10px;font-size:12.5px;min-height:36px;}
+    #hint-btn{width:34px;height:34px;font-size:13px;top:6px;right:6px;}
+    #opening-screen{padding:0 0 16px 0;}
+    #opening-content{transform:scale(.85);}
+    #confetti-layer, #hotspot-layer{
+      position:absolute;inset:0;
+      height:auto;
+    }
+  }
+
+  /* ----- Tablets ----- */
+  @media (min-width: 641px) and (max-width: 900px){
+    #game{
+      height:min(700px, 96vh);
+    }
+    .choice{min-height:44px;}
+    .hotspot{width:60px;height:60px;}
+    .hub-target{width:72px;height:72px;}
+  }
+
+  /* ----- Touch devices: disable hover-only animations ----- */
+  @media (hover: none) and (pointer: coarse){
+    .choice:hover{
+      background:rgba(236,232,224,.04);
+      color:var(--ink);
+      transform:none;
+      box-shadow:none;
+    }
+    .choice:hover .tag{color:var(--red);}
+    .choice:active{
+      background:var(--red);color:#fff;
+      transform:scale(.98);
+    }
+    .choice:active .tag{color:#fff;}
+    #hint-btn:hover{transform:none;box-shadow:0 0 18px rgba(226,48,72,.55);}
+    #hint-btn:active{transform:scale(.92);}
+    .hub-target.shown:hover{transform:translate(-50%,-50%) scale(1);}
+    .hotspot.shown:hover{transform:translate(-50%,-50%) scale(1);}
+    #opening-start:hover{
+      background:transparent;color:var(--gold);box-shadow:none;letter-spacing:5px;
+    }
+    #opening-start:active{
+      background:var(--gold);color:#0a0a14;
+    }
+    #submit-btn:hover{background:var(--red);}
+    #submit-btn:active{background:var(--red-bright);transform:scale(.98);}
+  }
+
+
+
+  
+
+
+  
+/* Phone Overlay */
+#phone-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(5, 10, 5, 0.95); z-index: 9999;
+  display: none; flex-direction: column; justify-content: center; align-items: center;
+}
+.phone-icon {
+  font-size: 100px; color: #5fa86b; cursor: pointer;
+  animation: phoneVibrate 0.08s infinite alternate;
+  text-shadow: 0 0 30px rgba(95,168,107,0.9), 0 0 60px rgba(95,168,107,0.6), 0 0 90px rgba(95,168,107,0.4);
+}
+.phone-hint {
+  margin-top: 50px; color: #5fa86b; font-size: 15px; letter-spacing: 1px;
+  animation: envPulse 1.5s infinite;
+  text-shadow: 0 0 10px rgba(95,168,107,0.7);
+  font-family:'Noto Sans KR',sans-serif; font-weight:700;
+}
+@keyframes phoneVibrate {
+  0% { transform: translate(3px, 1px) rotate(0deg); }
+  20% { transform: translate(-3px, -2px) rotate(-2deg); }
+  40% { transform: translate(1px, -3px) rotate(2deg); }
+  60% { transform: translate(-2px, 3px) rotate(0deg); }
+  80% { transform: translate(3px, -1px) rotate(-2deg); }
+  100% { transform: translate(-3px, 1px) rotate(2deg); }
+}
+
+/* Chat UI */
+  #chat-ui { display:none; flex-direction:column; position:absolute; inset:0; z-index:90; background:rgba(10,10,20,0.95); padding:10px; box-sizing:border-box; overflow-y:auto; padding-bottom:120px; backdrop-filter:blur(3px); }
+  .chat-bubble { max-width:75%; padding:12px 16px; border-radius:18px; margin-bottom:12px; line-height:1.5; font-size:15px; position:relative; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-family: 'Noto Sans KR', sans-serif; }
+  .chat-bubble.left { background:#2a2a3c; color:var(--ink); align-self:flex-start; border-top-left-radius:4px; border:1px solid rgba(236,232,224,0.1); }
+  .chat-bubble.right { background:var(--gold); color:#1a1408; align-self:flex-end; border-top-right-radius:4px; font-weight:500; }
+  .chat-sender { font-size:12px; margin-bottom:6px; color:var(--ink-dim); font-weight:700; letter-spacing:0.5px; }
+  @keyframes popIn { 0% { opacity:0; transform:translateY(15px) scale(0.9); } 100% { opacity:1; transform:translateY(0) scale(1); } } 100% { opacity:1; transform:translateY(0); } }
+  
+
+  /* Evidence Board */
+  .board-node { position: absolute; transform: translate(-50%, -50%); width: 85px; height: 95px; background: rgba(30,30,45,0.8); border: 2px solid #333; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; color: #666; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.5); backdrop-filter:blur(3px); }
+  .board-node.unlocked { border-color: var(--gold); color: #fff; background: rgba(45,45,65,0.9); }
+  .board-node.unlocked:hover { transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 0 15px rgba(216,166,87,0.6); }
+  .board-node .node-img { width: 50px; height: 50px; border-radius: 50%; margin-bottom: 5px; background: #1a1a24; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+  .board-node.unlocked .node-img { background: var(--ink); color: #1a1a24; }
+  .board-node .node-label { font-size: 11px; font-weight: bold; text-align: center; margin-bottom: 8px; width:100%; white-space:nowrap; }
+  .edge-label { font-family:'Oswald',sans-serif; font-size:11px; fill:var(--red-bright); font-weight:bold; text-shadow:0 1px 3px #000; }
+<style id="opening-redesign">
+/* Completely redesigned opening screen */
+#opening-screen{justify-content:center;padding:0;background:#070910;}
+#opening-bg{background:radial-gradient(circle at 50% 35%,rgba(55,76,120,.42),transparent 28%),linear-gradient(120deg,#080b13 0%,#111a2b 48%,#26151d 100%);animation:none;}
+#opening-bg::before{content:"";position:absolute;inset:7%;border:1px solid rgba(218,180,104,.24);box-shadow:inset 0 0 80px rgba(0,0,0,.45);}
+#opening-bg::after{background:linear-gradient(90deg,rgba(7,9,16,.82),transparent 45%,rgba(7,9,16,.82)),linear-gradient(0deg,rgba(7,9,16,.8),transparent 35%,rgba(7,9,16,.35));}
+#opening-content{width:min(430px,82vw);padding:42px 34px 36px;border:1px solid rgba(218,180,104,.5);background:rgba(7,9,16,.78);box-shadow:0 20px 70px rgba(0,0,0,.5);animation:openingFadeIn .9s ease-out;}
+.new-kicker{font:11px 'Oswald',sans-serif;letter-spacing:4px;color:#d8b466;opacity:.8;}
+.new-emblem{margin:25px auto 8px;color:#d8b466;font-size:50px;line-height:1;font-family:serif;transform:rotate(45deg);}
+.new-title{margin:10px 0 18px;font:700 clamp(38px,8vw,58px)/.96 'Noto Sans KR',sans-serif;letter-spacing:-3px;color:#f4eee2;}
+.new-title span{color:#d84b5e;}
+.new-rule{display:flex;align-items:center;gap:12px;color:#d8b466;font:11px 'Special Elite',monospace;letter-spacing:3px;}
+.new-rule i{height:1px;flex:1;background:rgba(218,180,104,.45);}
+.new-copy{margin:25px 0 28px;color:#b9bdc8;font:14px/1.9 'Noto Sans KR',sans-serif;letter-spacing:1px;}
+#opening-start{width:100%;display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#d8b466;border:0;color:#10131b;font:700 15px 'Noto Sans KR',sans-serif;letter-spacing:1px;text-transform:none;}
+#opening-start:hover{background:#f1d38b;color:#10131b;box-shadow:0 0 30px rgba(216,180,102,.35);letter-spacing:1px;}
+#opening-start strong{font-size:24px;font-weight:400;}
+#opening-start .pulse-dot{display:none;}
+#opening-hint{margin-top:20px;color:#777e8e;font:11px 'Noto Sans KR',sans-serif;letter-spacing:0;}
+<style id="opening-file-scene">
+#opening-screen{background:#000 !important;justify-content:center;padding:0;}
+#opening-bg{background:radial-gradient(ellipse at 50% 48%,rgba(92,71,43,.18),transparent 44%),linear-gradient(145deg,#080706,#16110d 52%,#050505);animation:none;}
+#opening-bg::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 4px);opacity:.35;}
+#opening-bg::after{background:radial-gradient(ellipse at center,transparent 25%,rgba(0,0,0,.78) 100%);}
+#opening-content{width:min(520px,90vw);padding:0;background:none;box-shadow:none;border:0;text-align:center;animation:none;}
+.file-scene{height:340px;position:relative;perspective:900px;filter:drop-shadow(0 25px 25px rgba(0,0,0,.75));}
+.file-shadow{position:absolute;left:8%;right:8%;bottom:10px;height:35px;background:#000;border-radius:50%;filter:blur(16px);}
+.case-folder{position:absolute;left:50%;top:12px;width:360px;height:285px;transform:translateX(-50%) rotateX(8deg) rotateZ(-2deg);transform-style:preserve-3d;animation:folderOpen 2.4s cubic-bezier(.2,.7,.2,1) both;}
+.folder-tab{position:absolute;top:-17px;left:22px;width:128px;padding:7px 0;background:#6d5131;color:#d4b98b;font:10px monospace;letter-spacing:2px;border-radius:4px 4px 0 0;}
+.folder-cover{position:absolute;inset:0;background:linear-gradient(135deg,#594329,#332517 70%,#241b12);border:1px solid #8b6b40;box-shadow:inset 0 0 35px rgba(0,0,0,.65);padding:30px 24px;text-align:left;transform-origin:left center;animation:coverReveal 2.4s cubic-bezier(.2,.7,.2,1) both;}
+.folder-cover:after{content:"";position:absolute;inset:10px;border:1px solid rgba(194,156,94,.25);pointer-events:none;}
+.stamp{position:absolute;right:22px;top:32px;border:2px solid #a52c2c;color:#b43a36;padding:7px 8px;font:bold 17px serif;line-height:1.15;transform:rotate(12deg);opacity:.85;}
+.cover-line{color:#b89b6d;font:11px monospace;letter-spacing:4px;margin-bottom:42px;}
+.cover-title{color:#e1c494;font:700 30px 'Noto Sans KR',sans-serif;letter-spacing:-1px;}
+.cover-meta{position:absolute;bottom:27px;color:#9d8259;font:10px monospace;letter-spacing:1px;}
+.case-paper{position:absolute;inset:18px;background:#c6b99d;color:#3c3022;padding:19px 22px;text-align:left;transform:translateZ(-3px) rotate(2deg);box-shadow:0 4px 14px #000;animation:paperSlide 2.4s ease-out both;}
+.paper-head{font:bold 13px monospace;letter-spacing:3px;border-bottom:1px solid #76654d;padding-bottom:8px;}
+.paper-photo{width:68px;height:78px;margin-top:14px;background:linear-gradient(145deg,#574c41,#a79c86);border:4px solid #71634d;float:left;margin-right:16px;filter:sepia(.6);}
+.paper-lines{height:80px;margin-top:15px;background:repeating-linear-gradient(#756852 0 1px,transparent 1px 13px);opacity:.7;}
+.paper-note{position:absolute;right:18px;bottom:30px;color:#812d26;font:14px serif;line-height:1.5;transform:rotate(-4deg);}
+.opening-caption{margin:2px 0 20px;color:#c0a67b;font:14px 'Noto Sans KR',sans-serif;letter-spacing:2px;}
+#opening-start{width:260px;padding:14px 18px;background:transparent;border:1px solid #b38a4d;color:#dfbd80;font:14px 'Noto Sans KR',sans-serif;display:inline-flex;justify-content:space-between;align-items:center;}
+#opening-start:hover{background:#b38a4d;color:#17110a;box-shadow:0 0 25px rgba(179,138,77,.35);letter-spacing:0;}
+#opening-start strong{font-size:22px;font-weight:400;}
+#opening-start .pulse-dot{display:none;}
+#opening-hint{margin-top:14px;color:#776b5b;font:11px 'Noto Sans KR',sans-serif;}
+@keyframes folderOpen{0%{transform:translateX(-50%) translateY(35px) rotateX(55deg) rotateZ(-5deg);opacity:0;}100%{transform:translateX(-50%) rotateX(8deg) rotateZ(-2deg);opacity:1;}}
+@keyframes coverReveal{0%,35%{transform:rotateY(0deg)}100%{transform:rotateY(-18deg)}}
+@keyframes paperSlide{0%,35%{transform:translateZ(-3px) translateX(0);opacity:0}100%{transform:translateZ(-3px) translateX(22px);opacity:1}}
+@media(max-width:600px){.case-folder{width:310px;height:245px}.file-scene{height:300px}.cover-title{font-size:25px}}
+<style id="opening-in-game-scene">
+#opening-bg{background:#000 !important;background-image:none !important;opacity:1 !important;}
+#opening-content{position:absolute;left:7%;right:7%;bottom:28px;width:auto;padding:18px 22px 16px;background:rgba(7,8,15,.94);border:1px solid #c9274a;box-shadow:0 0 0 1px rgba(0,0,0,.8),0 18px 40px #000;text-align:left;}
+.file-scene{height:235px;width:390px;position:absolute;left:50%;bottom:190px;transform:translateX(-50%) scale(.82);transform-origin:bottom center;}
+.opening-caption{font-size:16px;color:#e7d9c1;margin:0 0 14px;padding-left:2px;}
+#opening-start{margin-left:0;width:100%;border-color:#d29c43;color:#eee;background:rgba(20,20,27,.9);}
+#opening-hint{text-align:center;}
+@media(max-width:600px){#opening-content{left:5%;right:5%;bottom:18px}.file-scene{bottom:190px;transform:translateX(-50%) scale(.65);}}
+</style>
+</style>
+</style>
+</style>
+
+<style id="mystery-sound-style">
+  #sound-toggle{
+    position:fixed; right:18px; top:18px; z-index:9990;
+    min-width:108px; padding:10px 13px; border:1px solid rgba(216,166,87,.75);
+    border-radius:999px; color:#f5e6c8; background:rgba(25,17,13,.9);
+    box-shadow:0 5px 20px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.05);
+    font:600 12px/1.1 inherit; letter-spacing:.03em; cursor:pointer;
+    transition:transform .18s ease, background .18s ease, border-color .18s ease;
+  }
+  #sound-toggle:hover{ transform:translateY(-2px); background:rgba(62,34,25,.95); border-color:#f1c36a; }
+  #sound-toggle:active{ transform:translateY(0); }
+  #sound-toggle.is-off{ color:#b9aaa0; border-color:rgba(185,170,160,.45); background:rgba(25,17,13,.76); }
+  @media (max-width:640px){ #sound-toggle{right:12px; top:12px; min-width:96px; padding:9px 10px;} }
+</style><style id="suspense-atmosphere">
+  #statusbar{box-shadow:0 4px 18px rgba(0,0,0,.45),inset 0 -1px 0 rgba(226,48,72,.2)}
+  #statusbar .title{text-shadow:0 0 12px rgba(226,48,72,.55);animation:casePulse 3.8s ease-in-out infinite}
+  #scene-img{filter:brightness(.78) contrast(1.1) saturate(.88)}
+  #scene-img::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,3,10,.12),transparent 45%,rgba(3,3,10,.58));box-shadow:inset 0 0 70px rgba(0,0,0,.62)}
+  #stage::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at 50% 38%,transparent 18%,rgba(0,0,0,.12) 56%,rgba(0,0,0,.64) 100%)}
+  #dialog{box-shadow:0 14px 40px rgba(0,0,0,.88),0 0 28px rgba(226,48,72,.12);animation:dialogSuspense 5s ease-in-out infinite}
+  #speaker{text-shadow:0 0 10px rgba(226,48,72,.5)}
+  @keyframes casePulse{0%,100%{opacity:.78}50%{opacity:1;text-shadow:0 0 18px rgba(226,48,72,.9)}}
+  @keyframes dialogSuspense{0%,100%{border-color:rgba(226,48,72,.55)}50%{border-color:rgba(226,48,72,.88);box-shadow:0 14px 40px rgba(0,0,0,.88),0 0 34px rgba(226,48,72,.2)}}
+</style>
+<style id="opening-image-fix">#opening-bg{background-image:linear-gradient(rgba(5,5,12,.28),rgba(5,5,12,.5)),url("image_01.png?v=20261028_start");background-size:cover;background-position:center;}</style>
+<style id="remove-smith-background">#scene-img{background-image:none !important;background-color:#000 !important;}</style><style id="force-black-scene">#opening-screen,#opening-bg,#scene-img,.scene-bg,.scene-background{background-image:none !important;background:#000 !important;}#opening-bg::before,#opening-bg::after{display:none !important;}</style><style id="mobile-final-polish">@media(max-width:600px){#game{min-height:100svh;overflow:hidden}.dialog-box,.dialogue-box,.panel{max-width:calc(100vw - 24px)!important;margin-left:auto!important;margin-right:auto!important}.choice-btn,.choice,.action-btn,button{min-height:44px;max-width:100%;white-space:normal;line-height:1.35}.compare{display:flex!important;flex-direction:column!important;gap:10px!important}.causative-note{font-size:12px;line-height:1.65;color:#d8d3c8;margin-top:14px}}</style>
+<script>(function(){const add=()=>{const c=document.querySelector('.compare');if(c&&!c.querySelector('.causative-note')){const p=document.createElement('p');p.className='causative-note';p.innerHTML='<b>꼭 기억하세요</b><br>사역동사는 누군가가 다른 사람에게 어떤 행동을 하게 하거나 맡기거나 허락하는 관계를 나타냅니다. MAKE·HAVE·LET 중 무엇을 쓸지는 단어 하나가 아니라 상황과 의미를 먼저 살펴 결정합니다. 다른 표현(get, help 등)도 문맥에 따라 쓰일 수 있습니다.<br><br>기본 형태: <b>make / have / let + 사람 + 동사원형</b><br>사물에 일을 맡긴 경우: <b>have + 사물 + 과거분사</b>';c.appendChild(p)}};setInterval(add,500)})();</script><style id="smith-dialogue-image">#scene-img.smith-dialogue{background-image:url("scene_smith_brown_pressure.png?v=20261029") !important;background-size:cover!important;background-position:center!important;}</style><script>(function(){const f=()=>{const sp=document.querySelector("#speaker"),im=document.querySelector("#scene-img");if(sp&&im){im.classList.toggle("smith-dialogue",/스미스|Smith|경비원/.test(sp.textContent||""));}};new MutationObserver(f).observe(document.body,{subtree:true,childList:true,characterData:true});setInterval(f,300)})();</script></head>
+<body>
+
+<div id="game">
+  <!-- Opening Screen -->
+  <div id="opening-screen">
+    <div id="opening-bg"></div>
+    <div id="opening-flash"></div>
+    <div id="opening-content">
+      <div class="file-scene">
+        <div class="file-shadow"></div>
+        <div class="case-folder">
+          <div class="folder-tab">ARCHIVE / 017</div>
+          <div class="folder-cover">
+            <div class="stamp">미해결<br>사건</div>
+            <div class="cover-line">NATIONAL MUSEUM</div>
+            <div class="cover-title">사라진 다이아몬드</div>
+            <div class="cover-meta">CONFIDENTIAL · 1998. 11. 03</div>
+          </div>
+          <div class="case-paper">
+            <div class="paper-head">CASE FILE 017</div>
+            <div class="paper-photo"></div>
+            <div class="paper-lines"></div>
+            <div class="paper-note">범인은 아직<br>박물관 안에 있다.</div>
+          </div>
+        </div>
+      </div>
+      <div class="opening-caption">오래된 사건철을 펼칩니다</div>
+      <button id="opening-start" onclick="startGameFromOpening(event)"><span>수사 기록 열기</span><strong>→</strong></button>
+      <div id="opening-hint">클릭하여 사건을 시작하세요</div>
+    </div>
+  </div>
+
+  <!-- Life counter (3 chances) -->
+  <div id="life-counter" style="display: flex;">
+    <span class="label">기회</span>
+    <span class="pip" data-pip="1"></span>
+    <span class="pip" data-pip="2"></span>
+    <span class="pip" data-pip="3"></span>
+  </div>
+
+  <!-- Credit signature -->
+  <div id="credit"><span class="by">Created by</span> <span class="name">Minty</span></div>
+
+  <!-- Game Over screen (3-strikes) -->
+  <div id="gameover-screen">
+    <div id="gameover-stamp">CASE CLOSED</div>
+    <div id="gameover-title">수사 실패</div>
+    <div id="gameover-msg">
+      세 번의 기록 오류로 수사가 종결되었습니다.<br>
+      범인은 어둠 속으로 사라졌습니다.<br>
+      <span style="opacity:.6;font-size:12px;">처음부터 다시 시작하여 진실을 밝혀내세요.</span>
+    </div>
+    <button id="gameover-restart" onclick="restartFromGameOver()">사건 재수사</button>
+  </div>
+
+  <div id="statusbar">
+    <span class="title"><i class="fa-solid fa-gem"></i> 사라진 다이아몬드</span>
+    <span id="progress">사건 시작</span>
+  </div>
+
+  <div id="stage" class="playing">
+  <div id="evidence-board" style="display: none; position: absolute; inset: 0px; z-index: 85; background: url(&quot;data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==&quot;) center center / cover rgb(18, 18, 28); overflow: hidden; font-family: &quot;Noto Sans KR&quot;, sans-serif; filter: brightness(0.72) contrast(1.15) sepia(0.1); box-shadow: rgba(0, 0, 0, 0.9) 0px 0px 100px inset;">
+    <div style="position:absolute; inset:0; background:radial-gradient(circle at center, transparent 0%, #050508 100%); pointer-events:none; z-index:0;"></div>
+    <div class="board-title" style="position:absolute; top:20px; left:20px; color:var(--red); font-weight:bold; font-size:20px; letter-spacing:2px; text-shadow: 0 0 10px rgba(226,48,72,0.5); z-index:5;">사건 보드: 위계도</div>
+    <div style="position:absolute; top:45px; left:20px; color:var(--ink-dim); font-size:12px; z-index:5;">조사할 대상을 선택하세요.</div>
+    <svg id="board-lines" style="position:absolute; inset:0; width:100%; height:100%; z-index:1; pointer-events:none;"><line x1="74%" y1="48%" x2="87%" y2="48%" stroke="var(--red-bright)" stroke-width="4" style="filter: drop-shadow(rgba(0, 0, 0, 0.8) 2px 2px 4px);"></line><text x="80.5%" y="38%" text-anchor="middle" fill="#fff" font-size="14px" font-weight="bold" style="text-shadow: rgb(0, 0, 0) 2px 2px 4px, rgb(226, 48, 72) -1px -1px 2px;">Made (협박)</text><line x1="61%" y1="48%" x2="74%" y2="48%" stroke="var(--red-bright)" stroke-width="4" style="filter: drop-shadow(rgba(0, 0, 0, 0.8) 2px 2px 4px);"></line><text x="67.5%" y="38%" text-anchor="middle" fill="#fff" font-size="14px" font-weight="bold" style="text-shadow: rgb(0, 0, 0) 2px 2px 4px, rgb(226, 48, 72) -1px -1px 2px;">Made (빚협박)</text><line x1="74%" y1="48%" x2="22.5%" y2="37.5%" stroke="var(--red-bright)" stroke-width="4" style="filter: drop-shadow(rgba(0, 0, 0, 0.8) 2px 2px 4px);"></line><text x="48.25%" y="32.75%" text-anchor="middle" fill="#fff" font-size="14px" font-weight="bold" style="text-shadow: rgb(0, 0, 0) 2px 2px 4px, rgb(226, 48, 72) -1px -1px 2px;">Had (수리의뢰)</text><line x1="39.5%" y1="37.5%" x2="61%" y2="48%" stroke="var(--red-bright)" stroke-width="4" style="filter: drop-shadow(rgba(0, 0, 0, 0.8) 2px 2px 4px);"></line><text x="50.25%" y="32.75%" text-anchor="middle" fill="#fff" font-size="14px" font-weight="bold" style="text-shadow: rgb(0, 0, 0) 2px 2px 4px, rgb(226, 48, 72) -1px -1px 2px;">Made (횡령협박)</text></svg>
+    <div id="board-nodes" style="position:absolute; inset:0; z-index:2;"><div class="board-node" style="position: absolute; left: 32%; top: 25%; width: 15%; height: 25%; transition: transform 0.3s, box-shadow 0.3s; box-shadow: rgba(0, 0, 0, 0.9) 0px 15px 30px, rgba(0, 0, 0, 0.8) 0px 0px 15px inset, rgba(255, 255, 255, 0.1) 0px 0px 5px; border-radius: 4px; cursor: pointer;"><div style="width:100%; height:100%; background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='); background-size: cover; background-position: center; border: 2px solid var(--red-bright); border-radius: 4px;"></div>
+                       <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 2px 8px; font-size: 12px; white-space: nowrap; border: 1px solid var(--red); border-radius: 4px;">관장</div></div><div class="board-node" style="position: absolute; left: 55%; top: 33%; width: 12%; height: 30%; transition: transform 0.3s, box-shadow 0.3s; box-shadow: rgba(0, 0, 0, 0.9) 0px 15px 30px, rgba(0, 0, 0, 0.8) 0px 0px 15px inset, rgba(255, 255, 255, 0.1) 0px 0px 5px; border-radius: 4px; cursor: pointer;"><div style="width:100%; height:100%; background-image: url('deputy_command_chain_consistent.png?v=20261023_3'); background-size: cover; background-position: center; border: 2px solid var(--red-bright); border-radius: 4px;"></div>
+                       <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 2px 8px; font-size: 12px; white-space: nowrap; border: 1px solid var(--red); border-radius: 4px;">부관장</div></div><div class="board-node" style="position: absolute; left: 68%; top: 33%; width: 12%; height: 30%; transition: transform 0.3s, box-shadow 0.3s; box-shadow: rgba(0, 0, 0, 0.9) 0px 15px 30px, rgba(0, 0, 0, 0.8) 0px 0px 15px inset, rgba(255, 255, 255, 0.1) 0px 0px 5px; border-radius: 4px; cursor: pointer;"><div style="width:100%; height:100%; background-image: url('smith_cctv_chain_consistent.png?v=20261023_3'); background-size: cover; background-position: center; border: 2px solid var(--red-bright); border-radius: 4px;"></div>
+                       <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 2px 8px; font-size: 12px; white-space: nowrap; border: 1px solid var(--red); border-radius: 4px;">경비원 스미스</div></div><div class="board-node" style="position: absolute; left: 15%; top: 25%; width: 15%; height: 25%; transition: transform 0.3s, box-shadow 0.3s; box-shadow: rgba(0, 0, 0, 0.9) 0px 15px 30px, rgba(0, 0, 0, 0.8) 0px 0px 15px inset, rgba(255, 255, 255, 0.1) 0px 0px 5px; border-radius: 4px; cursor: pointer;"><div style="width:100%; height:100%; background-image: url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==); background-size: cover; background-position: center; border: 2px solid var(--red-bright); border-radius: 4px;"></div>
+                       <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 2px 8px; font-size: 12px; white-space: nowrap; border: 1px solid var(--red); border-radius: 4px;">전기 기술자</div></div><div class="board-node" style="position: absolute; left: 81%; top: 33%; width: 12%; height: 30%; transition: transform 0.3s, box-shadow 0.3s; box-shadow: rgba(0, 0, 0, 0.9) 0px 15px 30px, rgba(0, 0, 0, 0.8) 0px 0px 15px inset, rgba(255, 255, 255, 0.1) 0px 0px 5px; border-radius: 4px; cursor: pointer;"><div style="width:100%; height:100%; background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='); background-size: cover; background-position: center; border: 2px solid var(--red-bright); border-radius: 4px;"></div>
+                       <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 2px 8px; font-size: 12px; white-space: nowrap; border: 1px solid var(--red); border-radius: 4px;">청소부 브라운</div></div></div>
+    <button id="btn-final-report" onclick="render('final_analysis')" style="display: block; position: absolute; bottom: 20px; right: 20px; background: var(--gold); color: rgb(26, 20, 8); padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: rgba(216, 166, 87, 0.4) 0px 4px 15px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; z-index: 5; animation: 0.5s ease 0s 1 normal none running fadein;">최종 보고서 작성</button>
+  <img id="relationship-map" src="case_relationship_map_corrected.png?v=20261023_1" alt="인물 관계도" style="position: absolute; left: 2%; top: 58%; width: 27%; max-height: 25%; object-fit: contain; opacity: 0.92; z-index: 1; border: 1px solid rgba(216, 166, 87, 0.5); border-radius: 6px; box-shadow: rgba(0, 0, 0, 0.7) 0px 0px 18px;"></div>
+
+  </div>
+
+    <div id="scene-img" style="opacity: 1; background-image: url(&quot;data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==&quot;);"></div>
+  <div id="confetti-layer"><div class="confetti" style="left: 59.9776%; background: rgb(127, 209, 255); width: 7.67364px; height: 17.379px; animation-duration: 3.01428s; animation-delay: 2.28479s; transform: rotate(344.646deg);"></div><div class="confetti" style="left: 48.9875%; background: rgb(127, 209, 255); width: 8.58758px; height: 14.1344px; animation-duration: 4.72564s; animation-delay: 1.00091s; transform: rotate(168.558deg);"></div><div class="confetti" style="left: 11.1495%; background: rgb(216, 166, 87); width: 13.1393px; height: 11.8383px; animation-duration: 4.70463s; animation-delay: 3.43211s; transform: rotate(202.228deg);"></div><div class="confetti" style="left: 71.9268%; background: rgb(127, 209, 255); width: 13.0208px; height: 15.1751px; animation-duration: 2.90347s; animation-delay: 3.99872s; transform: rotate(253.599deg);"></div><div class="confetti" style="left: 11.312%; background: rgb(127, 209, 255); width: 6.62352px; height: 15.0453px; animation-duration: 4.7007s; animation-delay: 0.206069s; transform: rotate(223.913deg);"></div><div class="confetti" style="left: 25.9602%; background: rgb(127, 209, 255); width: 11.5697px; height: 14.6871px; animation-duration: 2.54795s; animation-delay: 0.536064s; transform: rotate(276.237deg);"></div><div class="confetti" style="left: 78.8352%; background: rgb(107, 140, 174); width: 13.9782px; height: 12.4051px; animation-duration: 2.80488s; animation-delay: 0.960134s; transform: rotate(346.265deg);"></div><div class="confetti" style="left: 77.1197%; background: rgb(216, 166, 87); width: 9.509px; height: 12.5464px; animation-duration: 4.73434s; animation-delay: 0.420704s; transform: rotate(205.476deg);"></div><div class="confetti" style="left: 25.1125%; background: rgb(107, 140, 174); width: 6.00899px; height: 15.2195px; animation-duration: 2.96122s; animation-delay: 0.722946s; transform: rotate(296.757deg);"></div><div class="confetti" style="left: 51.3115%; background: rgb(255, 255, 255); width: 7.25636px; height: 17.279px; animation-duration: 3.61131s; animation-delay: 2.60452s; transform: rotate(180.094deg);"></div><div class="confetti" style="left: 13.4302%; background: rgb(191, 227, 240); width: 7.43933px; height: 15.3393px; animation-duration: 3.52304s; animation-delay: 0.688953s; transform: rotate(122.888deg);"></div><div class="confetti" style="left: 55.2074%; background: rgb(255, 143, 177); width: 13.1602px; height: 11.6528px; animation-duration: 3.44376s; animation-delay: 1.96017s; transform: rotate(294.698deg);"></div><div class="confetti" style="left: 33.2377%; background: rgb(107, 140, 174); width: 7.66169px; height: 10.9831px; animation-duration: 3.15605s; animation-delay: 3.92194s; transform: rotate(359.955deg);"></div><div class="confetti" style="left: 96.4277%; background: rgb(191, 227, 240); width: 10.6968px; height: 15.3341px; animation-duration: 3.34884s; animation-delay: 1.82502s; transform: rotate(229.079deg);"></div><div class="confetti" style="left: 95.9462%; background: rgb(255, 255, 255); width: 11.2675px; height: 13.9628px; animation-duration: 3.71445s; animation-delay: 1.75808s; transform: rotate(109.778deg);"></div><div class="confetti" style="left: 95.7662%; background: rgb(216, 166, 87); width: 9.40533px; height: 16.3748px; animation-duration: 4.9155s; animation-delay: 0.627468s; transform: rotate(219.655deg);"></div><div class="confetti" style="left: 72.4008%; background: rgb(255, 143, 177); width: 9.1547px; height: 13.2489px; animation-duration: 4.03561s; animation-delay: 2.56105s; transform: rotate(290.225deg);"></div><div class="confetti" style="left: 68.8769%; background: rgb(255, 255, 255); width: 8.74485px; height: 14.5182px; animation-duration: 4.07268s; animation-delay: 2.18939s; transform: rotate(77.2795deg);"></div><div class="confetti" style="left: 28.817%; background: rgb(226, 48, 72); width: 10.9164px; height: 11.5199px; animation-duration: 3.86681s; animation-delay: 1.78343s; transform: rotate(325.555deg);"></div><div class="confetti" style="left: 83.0779%; background: rgb(255, 143, 177); width: 7.96039px; height: 12.504px; animation-duration: 3.90857s; animation-delay: 0.384969s; transform: rotate(117.886deg);"></div><div class="confetti" style="left: 0.102623%; background: rgb(255, 143, 177); width: 7.41046px; height: 12.8558px; animation-duration: 2.59724s; animation-delay: 3.36837s; transform: rotate(317.45deg);"></div><div class="confetti" style="left: 7.45488%; background: rgb(255, 143, 177); width: 9.418px; height: 11.6696px; animation-duration: 4.17524s; animation-delay: 1.39691s; transform: rotate(47.2664deg);"></div><div class="confetti" style="left: 6.92625%; background: rgb(226, 48, 72); width: 13.2759px; height: 15.5693px; animation-duration: 4.94072s; animation-delay: 0.27749s; transform: rotate(344.724deg);"></div><div class="confetti" style="left: 26.6529%; background: rgb(255, 216, 77); width: 8.06423px; height: 17.6341px; animation-duration: 2.75219s; animation-delay: 3.4731s; transform: rotate(124.046deg);"></div><div class="confetti" style="left: 36.1119%; background: rgb(127, 209, 255); width: 12.6042px; height: 11.0611px; animation-duration: 2.58515s; animation-delay: 1.71215s; transform: rotate(162.883deg);"></div><div class="confetti" style="left: 37.5715%; background: rgb(255, 255, 255); width: 13.1801px; height: 10.628px; animation-duration: 4.02906s; animation-delay: 3.6593s; transform: rotate(116.07deg);"></div><div class="confetti" style="left: 25.3238%; background: rgb(255, 143, 177); width: 13.5963px; height: 14.053px; animation-duration: 4.98878s; animation-delay: 2.21168s; transform: rotate(216.31deg);"></div><div class="confetti" style="left: 37.4978%; background: rgb(127, 209, 255); width: 8.02169px; height: 10.9307px; animation-duration: 4.22212s; animation-delay: 1.57942s; transform: rotate(236.597deg);"></div><div class="confetti" style="left: 1.47627%; background: rgb(255, 216, 77); width: 10.84px; height: 10.3532px; animation-duration: 4.52615s; animation-delay: 0.0831627s; transform: rotate(334.727deg);"></div><div class="confetti" style="left: 21.395%; background: rgb(226, 48, 72); width: 7.63634px; height: 14.0802px; animation-duration: 3.51561s; animation-delay: 1.71886s; transform: rotate(115.191deg);"></div><div class="confetti" style="left: 60.1409%; background: rgb(255, 255, 255); width: 8.87782px; height: 12.4728px; animation-duration: 4.58476s; animation-delay: 2.69209s; transform: rotate(56.0369deg);"></div><div class="confetti" style="left: 43.2915%; background: rgb(255, 143, 177); width: 7.88604px; height: 14.4751px; animation-duration: 3.52594s; animation-delay: 3.43232s; transform: rotate(130.765deg);"></div><div class="confetti" style="left: 1.2711%; background: rgb(127, 209, 255); width: 10.9528px; height: 15.5119px; animation-duration: 2.87089s; animation-delay: 2.5475s; transform: rotate(115.126deg);"></div><div class="confetti" style="left: 19.157%; background: rgb(255, 143, 177); width: 11.933px; height: 10.188px; animation-duration: 4.82313s; animation-delay: 3.3247s; transform: rotate(328.371deg);"></div><div class="confetti" style="left: 85.0959%; background: rgb(255, 216, 77); width: 10.6953px; height: 14.4561px; animation-duration: 4.91686s; animation-delay: 1.85236s; transform: rotate(113.449deg);"></div><div class="confetti" style="left: 70.3988%; background: rgb(191, 227, 240); width: 6.05569px; height: 11.5568px; animation-duration: 3.66916s; animation-delay: 0.0162951s; transform: rotate(139.932deg);"></div><div class="confetti" style="left: 76.4126%; background: rgb(226, 48, 72); width: 11.6913px; height: 16.9595px; animation-duration: 4.35654s; animation-delay: 1.01511s; transform: rotate(171.872deg);"></div><div class="confetti" style="left: 78.7941%; background: rgb(255, 143, 177); width: 12.5237px; height: 14.7974px; animation-duration: 3.99891s; animation-delay: 1.96497s; transform: rotate(344.115deg);"></div><div class="confetti" style="left: 15.0409%; background: rgb(191, 227, 240); width: 8.14166px; height: 11.5385px; animation-duration: 2.60785s; animation-delay: 1.26351s; transform: rotate(283.84deg);"></div><div class="confetti" style="left: 48.1155%; background: rgb(107, 140, 174); width: 11.6596px; height: 15.6699px; animation-duration: 4.93777s; animation-delay: 1.4346s; transform: rotate(250.867deg);"></div><div class="confetti" style="left: 60.2343%; background: rgb(191, 227, 240); width: 8.53142px; height: 17.032px; animation-duration: 2.77798s; animation-delay: 0.342749s; transform: rotate(41.3108deg);"></div><div class="confetti" style="left: 19.7599%; background: rgb(255, 255, 255); width: 7.53401px; height: 17.6975px; animation-duration: 4.45202s; animation-delay: 2.2151s; transform: rotate(287.072deg);"></div><div class="confetti" style="left: 44.3454%; background: rgb(226, 48, 72); width: 11.9403px; height: 16.5992px; animation-duration: 2.88422s; animation-delay: 3.01082s; transform: rotate(10.3879deg);"></div><div class="confetti" style="left: 29.3709%; background: rgb(255, 216, 77); width: 9.17073px; height: 10.5235px; animation-duration: 4.34237s; animation-delay: 0.210618s; transform: rotate(148.504deg);"></div><div class="confetti" style="left: 68.7371%; background: rgb(127, 209, 255); width: 11.9764px; height: 15.0143px; animation-duration: 3.66739s; animation-delay: 3.20009s; transform: rotate(152.723deg);"></div><div class="confetti" style="left: 91.0946%; background: rgb(255, 255, 255); width: 10.4878px; height: 11.953px; animation-duration: 3.89384s; animation-delay: 2.53426s; transform: rotate(334.895deg);"></div><div class="confetti" style="left: 73.0652%; background: rgb(226, 48, 72); width: 12.6115px; height: 12.0999px; animation-duration: 4.17613s; animation-delay: 2.05631s; transform: rotate(73.7442deg);"></div><div class="confetti" style="left: 21.2923%; background: rgb(255, 216, 77); width: 10.7974px; height: 13.0151px; animation-duration: 4.83005s; animation-delay: 0.847993s; transform: rotate(201.046deg);"></div><div class="confetti" style="left: 89.2341%; background: rgb(255, 255, 255); width: 6.36715px; height: 13.9991px; animation-duration: 3.80944s; animation-delay: 2.07634s; transform: rotate(232.575deg);"></div><div class="confetti" style="left: 40.4465%; background: rgb(255, 255, 255); width: 12.664px; height: 13.8124px; animation-duration: 4.48929s; animation-delay: 0.00284133s; transform: rotate(249.395deg);"></div><div class="confetti" style="left: 51.5523%; background: rgb(226, 48, 72); width: 13.9988px; height: 13.2282px; animation-duration: 4.6397s; animation-delay: 1.88029s; transform: rotate(32.465deg);"></div><div class="confetti" style="left: 26.8146%; background: rgb(255, 255, 255); width: 12.3292px; height: 15.0072px; animation-duration: 3.21648s; animation-delay: 1.03461s; transform: rotate(169.197deg);"></div><div class="confetti" style="left: 70.0939%; background: rgb(216, 166, 87); width: 6.05299px; height: 16.9897px; animation-duration: 4.82157s; animation-delay: 0.208422s; transform: rotate(156.494deg);"></div><div class="confetti" style="left: 23.3926%; background: rgb(216, 166, 87); width: 7.45525px; height: 10.4603px; animation-duration: 4.58968s; animation-delay: 3.57755s; transform: rotate(239.218deg);"></div><div class="confetti" style="left: 4.69038%; background: rgb(255, 255, 255); width: 8.07654px; height: 13.8444px; animation-duration: 3.87363s; animation-delay: 1.73123s; transform: rotate(267.757deg);"></div><div class="confetti" style="left: 11.3997%; background: rgb(216, 166, 87); width: 11.7616px; height: 10.5169px; animation-duration: 3.72173s; animation-delay: 3.41971s; transform: rotate(127.965deg);"></div><div class="confetti" style="left: 45.0246%; background: rgb(107, 140, 174); width: 10.6355px; height: 16.5955px; animation-duration: 4.63779s; animation-delay: 3.84252s; transform: rotate(230.383deg);"></div><div class="confetti" style="left: 19.1965%; background: rgb(255, 143, 177); width: 11.6214px; height: 16.7299px; animation-duration: 4.62102s; animation-delay: 3.09744s; transform: rotate(233.942deg);"></div><div class="confetti" style="left: 91.0817%; background: rgb(255, 255, 255); width: 10.1265px; height: 14.0873px; animation-duration: 4.86912s; animation-delay: 3.48746s; transform: rotate(261.815deg);"></div><div class="confetti" style="left: 14.0721%; background: rgb(127, 209, 255); width: 8.79004px; height: 17.9292px; animation-duration: 2.83203s; animation-delay: 1.14041s; transform: rotate(147.411deg);"></div><div class="confetti" style="left: 26.015%; background: rgb(107, 140, 174); width: 8.58815px; height: 11.2474px; animation-duration: 4.97114s; animation-delay: 3.58526s; transform: rotate(9.62091deg);"></div><div class="confetti" style="left: 71.0933%; background: rgb(226, 48, 72); width: 13.7931px; height: 15.8426px; animation-duration: 3.64166s; animation-delay: 1.32145s; transform: rotate(328.111deg);"></div><div class="confetti" style="left: 6.71336%; background: rgb(191, 227, 240); width: 10.5933px; height: 10.4482px; animation-duration: 2.65865s; animation-delay: 2.17799s; transform: rotate(66.8099deg);"></div><div class="confetti" style="left: 89.6505%; background: rgb(216, 166, 87); width: 13.317px; height: 10.5665px; animation-duration: 4.07441s; animation-delay: 1.63899s; transform: rotate(138.034deg);"></div><div class="confetti" style="left: 23.7284%; background: rgb(127, 209, 255); width: 13.4483px; height: 12.1203px; animation-duration: 4.21189s; animation-delay: 3.15467s; transform: rotate(173.437deg);"></div><div class="confetti" style="left: 14.4522%; background: rgb(107, 140, 174); width: 10.3125px; height: 15.1753px; animation-duration: 3.28934s; animation-delay: 0.729246s; transform: rotate(332.494deg);"></div><div class="confetti" style="left: 3.74561%; background: rgb(127, 209, 255); width: 6.50243px; height: 17.6408px; animation-duration: 4.30726s; animation-delay: 2.74538s; transform: rotate(270.236deg);"></div><div class="confetti" style="left: 27.973%; background: rgb(127, 209, 255); width: 13.5586px; height: 13.7598px; animation-duration: 4.33077s; animation-delay: 2.5217s; transform: rotate(183.503deg);"></div><div class="confetti" style="left: 29.3564%; background: rgb(191, 227, 240); width: 6.1854px; height: 11.1541px; animation-duration: 3.96299s; animation-delay: 1.6145s; transform: rotate(69.6234deg);"></div><div class="confetti" style="left: 71.9899%; background: rgb(226, 48, 72); width: 6.65202px; height: 11.946px; animation-duration: 4.07068s; animation-delay: 3.63411s; transform: rotate(112.914deg);"></div><div class="confetti" style="left: 43.2091%; background: rgb(255, 143, 177); width: 9.39715px; height: 17.3867px; animation-duration: 2.69017s; animation-delay: 0.0787117s; transform: rotate(130.597deg);"></div><div class="confetti" style="left: 64.2454%; background: rgb(127, 209, 255); width: 6.50531px; height: 11.7502px; animation-duration: 4.24415s; animation-delay: 0.674311s; transform: rotate(245.717deg);"></div><div class="confetti" style="left: 53.5364%; background: rgb(216, 166, 87); width: 13.3196px; height: 14.3524px; animation-duration: 2.6961s; animation-delay: 2.21315s; transform: rotate(214.024deg);"></div><div class="confetti" style="left: 83.3896%; background: rgb(255, 255, 255); width: 9.74348px; height: 10.9534px; animation-duration: 2.77064s; animation-delay: 1.40979s; transform: rotate(310.489deg);"></div><div class="confetti" style="left: 16.0506%; background: rgb(255, 143, 177); width: 9.92375px; height: 10.8227px; animation-duration: 4.01205s; animation-delay: 3.07309s; transform: rotate(162.58deg);"></div><div class="confetti" style="left: 7.21851%; background: rgb(107, 140, 174); width: 10.9791px; height: 14.9485px; animation-duration: 3.50611s; animation-delay: 0.893917s; transform: rotate(74.1659deg);"></div><div class="confetti" style="left: 33.9588%; background: rgb(255, 216, 77); width: 13.0804px; height: 12.5264px; animation-duration: 3.60538s; animation-delay: 1.30666s; transform: rotate(238.596deg);"></div><div class="confetti" style="left: 96.3805%; background: rgb(255, 216, 77); width: 12.552px; height: 12.9457px; animation-duration: 2.56146s; animation-delay: 0.868251s; transform: rotate(209.608deg);"></div><div class="confetti" style="left: 57.2291%; background: rgb(127, 209, 255); width: 7.30364px; height: 11.5588px; animation-duration: 2.9348s; animation-delay: 1.47616s; transform: rotate(266.761deg);"></div><div class="confetti" style="left: 70.0634%; background: rgb(255, 143, 177); width: 8.96398px; height: 10.0279px; animation-duration: 3.38904s; animation-delay: 1.95487s; transform: rotate(325.992deg);"></div><div class="confetti" style="left: 79.9696%; background: rgb(255, 255, 255); width: 9.79052px; height: 12.4398px; animation-duration: 3.33171s; animation-delay: 3.54037s; transform: rotate(305.25deg);"></div><div class="confetti" style="left: 20.7232%; background: rgb(107, 140, 174); width: 13.924px; height: 11.0903px; animation-duration: 3.32444s; animation-delay: 2.76812s; transform: rotate(323.795deg);"></div><div class="confetti" style="left: 44.2285%; background: rgb(255, 143, 177); width: 9.89776px; height: 11.613px; animation-duration: 3.0445s; animation-delay: 2.89447s; transform: rotate(343.317deg);"></div><div class="confetti" style="left: 29.8005%; background: rgb(127, 209, 255); width: 9.94573px; height: 10.3309px; animation-duration: 2.72015s; animation-delay: 1.98979s; transform: rotate(338.628deg);"></div><div class="confetti" style="left: 24.9285%; background: rgb(255, 143, 177); width: 9.39331px; height: 11.1376px; animation-duration: 2.82172s; animation-delay: 1.82483s; transform: rotate(352.727deg);"></div><div class="confetti" style="left: 56.759%; background: rgb(107, 140, 174); width: 9.73536px; height: 14.2658px; animation-duration: 4.30151s; animation-delay: 0.752509s; transform: rotate(22.2126deg);"></div><div class="confetti" style="left: 54.8514%; background: rgb(127, 209, 255); width: 6.34853px; height: 15.8148px; animation-duration: 2.45894s; animation-delay: 1.49392s; transform: rotate(354.793deg);"></div><div class="confetti" style="left: 93.1087%; background: rgb(127, 209, 255); width: 7.13462px; height: 14.6967px; animation-duration: 3.24177s; animation-delay: 2.43607s; transform: rotate(198.408deg);"></div><div class="confetti" style="left: 30.8353%; background: rgb(255, 216, 77); width: 10.5178px; height: 14.5397px; animation-duration: 3.70579s; animation-delay: 1.05382s; transform: rotate(142.551deg);"></div><div class="confetti" style="left: 56.5687%; background: rgb(191, 227, 240); width: 9.34198px; height: 14.1547px; animation-duration: 3.36691s; animation-delay: 2.89396s; transform: rotate(260.316deg);"></div></div>
+    <div id="vignette"></div>
+    <div id="hotspot-layer"></div>
+    <div id="hunt-banner"></div>
+    <div id="timer" style="display: none;">00:13</div>
+    <button id="hint-btn" title="힌트카드 3장 남음" aria-label="힌트카드 3장 남음"><span class="pulse"></span><i class="fa-solid fa-magnifying-glass"></i><span id="hint-count">3</span></button>
+    <div id="dots"><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot active"></div></div>
+
+    
+    <!-- Chat UI -->
+    
+    <!-- Phone Overlay -->
+    <div id="phone-overlay" style="display: none;">
+      <i class="fa-solid fa-mobile-screen-button phone-icon" onclick="openPhone()"></i>
+      <div class="phone-hint">삐빅- (메시지가 도착했습니다. 화면을 클릭하세요)</div>
+    </div>
+
+    <div id="chat-ui" style="display: none;">
+      <div style="text-align:center; font-size:12px; color:#555; margin-bottom:15px; margin-top:20px;">익명의 제보자</div>
+      <div id="chat-messages" style="display:flex; flex-direction:column;"><div class="chat-bubble left"><div class="chat-sender">익명</div>탐정님, 흙 묻은 신발, 깔끔한 증거, 빠른 체포...</div><div class="chat-bubble left"><div class="chat-sender">익명</div>너무 깔끔하지 않나요? 당신은 속고 있는지도 모릅니다.</div><div class="chat-bubble left"><div class="chat-sender">익명</div>모든 행동에는 배후가 있습니다. 신발을 신은 사람 뒤에는 신발을 신기도록 한 사람이 있고, 그 사람 뒤에는 또 다른 사람이 있습니다.</div><div class="chat-bubble left"><div class="chat-sender">익명</div>누가 브라운을 신발 신기도록 했나요? 누가 그 사람을 시켰나요? 누가 결정을 허락했나요? 한 번 더 물어보세요.</div><div class="chat-bubble left"><div class="chat-sender">익명</div>진짜 범인은 신발을 신지 않았을 겁니다.</div><div class="chat-bubble right">모든 행동에는 배후가 있다... 신기도록 "한 사람", 그 사람을 "시킨 사람"이라.</div><div class="chat-bubble right">아무래도 이 사건, 처음부터 다시 파헤쳐봐야겠군.</div></div>
+    </div>
+
+    <div id="dialog" style="display: none;">
+      <div id="speaker" style="display: block;" class="">탐정 민호</div>
+      <div id="dialog-text" style="display: block;" class=""><b>📊 학습 정리</b><br><br><b>MAKE</b> 강제로 하게 함<br><b>HAVE</b> 일을 맡기거나 하게 함<br><b>LET</b> 하도록 허락하거나 막지 않음<br><br>이 사건에서는 협박은 MAKE, 업무 지시는 HAVE, 방관은 LET입니다.<span class="caret"></span></div>
+      <div id="choices" style="display: flex;"><button class="choice proceed">사건 종료</button></div>
+      <div id="input-area" style="display: none;">
+        <div id="clue-words"><span class="clue">The boss</span><span class="clue">his staff</span><span class="clue">the diamond</span></div>
+        <input type="text" id="final-input" placeholder="영어 문장을 입력하세요…" autocomplete="off" spellcheck="false" style="display: block;">
+        <button id="submit-btn">시스템 해제</button>
+      </div>
+    </div>
+
+    <!-- zoom-in clue inspection -->
+    <div id="zoom">
+      <div id="zoom-frame"><div id="zoom-reticle"></div></div>
+      <div id="zoom-card">
+        <div id="zoom-tag"><i class="fa-solid fa-camera"></i> 카메라 줌인 — 단서 관찰</div>
+        <div id="zoom-name"></div>
+        <div id="zoom-obs"></div>
+        <button id="zoom-close" onclick="closeZoom()">렌즈를 거둔다</button>
+      </div>
+    </div>
+
+    <div id="hint-modal">
+      <div id="hint-card">
+        <h3><i class="fa-solid fa-lightbulb"></i> 탐정의 직감</h3>
+        <p id="hint-remaining">남은 힌트카드: 3장</p>
+        <p id="hint-text">이 장면에는 별도 힌트가 없습니다. 대사를 다시 읽고 단서를 찾아보세요.</p>
+        <button onclick="closeHint()">현장으로 돌아가기</button>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+/* ============================================================
+   숨막히는 추리퀴즈 — 사라진 다이아몬드 (v2)
+   능동태 / 수동태 학습 방탈출
+   ============================================================ */
+
+/* ---- scene background art (inline SVG data URIs, no external deps) ---- */
+function bg(svg){return "url(\"data:image/svg+xml;utf8,"+encodeURIComponent(svg)+"\")";}
+
+const ART = {
+  desk: "url(data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%232c3e50'/%3E%3Crect x='100' y='400' width='600' height='200' fill='%238e44ad'/%3E%3Crect x='300' y='350' width='200' height='150' fill='%23ecf0f1' transform='rotate(-10 400 425)'/%3E%3Ctext x='350' y='420' font-family='sans-serif' font-size='40' fill='%23e74c3c' transform='rotate(-10 400 425)'%3E?%3C/text%3E%3C/svg%3E)",
+  brown_back: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  ending_new: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  investigation_board: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  brown: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  hacking_sys: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  fingerprint: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  director: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  safe: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+
+  winFinal: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  museum: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  glass: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  cctv: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  footprints: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  stand: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  kim: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  guard: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  janitor: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==)",
+  bomb: bg(`<svg xmlns='http://www.w3.org/2000/svg' width='860' height='600'><rect width='860' height='600' fill='%23100608'/><rect x='280' y='160' width='300' height='300' rx='10' fill='%231c1012' stroke='%23e23048' stroke-width='3'/><circle cx='430' cy='280' r='60' fill='%230a0406' stroke='%23e23048' stroke-width='3'/><path d='M430 280 L430 235 M430 280 L466 300' stroke='%23ff4d63' stroke-width='5' stroke-linecap='round'/><rect x='330' y='370' width='200' height='44' rx='5' fill='%23050203'/><circle cx='360' cy='200' r='7' fill='%23e23048'><animate attributeName='opacity' values='1;.2;1' dur='1s' repeatCount='indefinite'/></circle><rect width='860' height='600' fill='%23e23048' opacity='.07'/></svg>`),
+  win: bg(`<svg xmlns='http://www.w3.org/2000/svg' width='860' height='600'><defs><radialGradient id='w' cx='50%' cy='40%' r='70%'><stop offset='0%' stop-color='%231e3a2a'/><stop offset='100%' stop-color='%2307070d'/></radialGradient></defs><rect width='860' height='600' fill='url(%23w)'/><g transform='translate(430 270)'><polygon points='0,-58 50,-18 30,52 -30,52 -50,-18' fill='%23bfe3f0' opacity='.95'/><polygon points='0,-58 0,52 -50,-18' fill='%238fc4d8'/><polygon points='0,-58 0,52 30,52 50,-18' fill='%23d6f0f8'/></g><g stroke='%23d8a657' stroke-width='2'><line x1='200' y1='150' x2='210' y2='170'/><line x1='640' y1='180' x2='650' y2='200'/><line x1='300' y1='420' x2='310' y2='440'/><line x1='560' y1='430' x2='570' y2='450'/></g></svg>`),
+  /* placeholder for the museum hub (wide shot showing glass case, CCTV, footprints).
+     Will be replaced with the uploaded image. */
+  receipt: "url('evidence_receipt_v2.png?v=20261023_1')",
+  cctv_route: "url('evidence_cctv_route_v2.png?v=20261023_1')",
+  curator_shocked: "url('scene_curator_v2.png?v=20261023_1')",
+  relation_map: "url('case_relationship_map_corrected.png?v=20261023_1')",
+  lobby: bg(`<svg xmlns='http://www.w3.org/2000/svg' width='860' height='600'><defs><linearGradient id='lf' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='%231a1828'/><stop offset='100%' stop-color='%2308070f'/></linearGradient></defs><rect width='860' height='600' fill='url(%23lf)'/><polygon points='0,180 860,200 860,560 0,580' fill='%23120f1c'/><rect x='340' y='240' width='180' height='180' fill='none' stroke='%23433a55' stroke-width='3'/><g stroke='%23b9c4d4' stroke-width='1.5' fill='none' opacity='.7'><path d='M360 300 L420 280 L390 340 L450 320'/></g><circle cx='430' cy='110' r='14' fill='%23161616'/><path d='M418 116 q12 18 24 0' stroke='%23070707' stroke-width='9' fill='none' stroke-linecap='round'/><g fill='%23463b2e' opacity='.6'><ellipse cx='620' cy='460' rx='15' ry='22' transform='rotate(25 620 460)'/><ellipse cx='680' cy='430' rx='14' ry='21' transform='rotate(25 680 430)'/><ellipse cx='735' cy='400' rx='13' ry='20' transform='rotate(25 735 400)'/></g><text x='430' y='80' fill='%239a958c' font-family='Oswald' font-size='13' text-anchor='middle' letter-spacing='4'>박물관 전경 — 이미지 대체 예정</text></svg>`)
+};
+
+/* ---- story graph ---- */
+/* node types:
+   - choice : multiple-choice question or simple proceed
+   - input  : boss free-response
+   each choice: {tag,label,correct?,next?,wrong?(id of wrong-answer node)}        */
+
+const STORY = {
+  start:{
+    speaker:"시스템", cls:"sys", art:ART.desk, phase:0,
+    text:"낡은 사건 철을 펼칩니다. 조사를 재개하시겠습니까? (Y/N)",
+    hint:"탐정 민호의 스마트폰으로 발신자 표시 제한 알림이 울립니다.",
+    choices:[
+      {label:"Y (조사를 재개한다)", proceed:true, next:"prologue"}
+    ]
+  },
+
+  prologue:{
+    type: "chat",
+    art:ART.desk, phase:0,
+    messages: [
+      { type:'left', sender:'익명', text:'탐정님, 흙 묻은 신발, 깔끔한 증거, 빠른 체포...' },
+      { type:'left', sender:'익명', text:'너무 깔끔하지 않나요? 당신은 속고 있는지도 모릅니다.' },
+      { type:'left', sender:'익명', text:'모든 행동에는 배후가 있습니다. 신발을 신은 사람 뒤에는 신발을 신기도록 한 사람이 있고, 그 사람 뒤에는 또 다른 사람이 있습니다.' },
+      { type:'left', sender:'익명', text:'누가 브라운을 신발 신기도록 했나요? 누가 그 사람을 시켰나요? 누가 결정을 허락했나요? 한 번 더 물어보세요.' },
+      { type:'left', sender:'익명', text:'진짜 범인은 신발을 신지 않았을 겁니다.' },
+      { type:'right', sender:'', text:'모든 행동에는 배후가 있다... 신기도록 "한 사람", 그 사람을 "시킨 사람"이라.' },
+      { type:'right', sender:'', text:'아무래도 이 사건, 처음부터 다시 파헤쳐봐야겠군.' }
+    ],
+    choices:[{label:"사건 보드를 확인한다.", proceed:true, next:"hub"}]
+  },
+
+  file01:{
+    speaker:"탐정 민호", art:"url('image_05.png?v=20261029_2')", file:"FILE.01 — 신발의 진실", phase:0,
+    text:"(흙묻은 신발을 들어 보인다)<br>브라운, 이 신발을 누가 주었어?",
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file01_2"}]
+  },
+
+  file01_2:{
+    speaker:"청소부 브라운", art:"url('image_05.png?v=20261029_2')", file:"FILE.01 — 신발의 진실", phase:0,
+    text:"브라운: 제가 신었던 신발입니다.<br><br><b>탐정 민호:</b> 누가 줬어?<br><br><b>브라운:</b> ...",
+    choices:[{label:"(스미스였다고 추궁한다)", proceed:true, next:"file01_3"}]
+  },
+
+  file01_3:{
+    speaker:"탐정 민호", art:"url('image_05.png?v=20261029_2')", file:"FILE.01 — 신발의 진실", phase:0,
+    text:"스미스였지?<br><br><b>브라운:</b> ...<br><br><b>탐정 민호:</b> 그 신발을 신고 싶었어?", 
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file01_4"}]
+  },
+
+  file01_4:{
+    speaker:"청소부 브라운", art:"url('image_05.png?v=20261029_2')", file:"FILE.01 — 신발의 진실", phase:0,
+    text:"아니요... 신고 싶지 않았어요.<br><br><b>탐정 민호:</b> 무슨 일이었어?", 
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file01_5"}]
+  },
+
+  file01_5:{
+    speaker:"청소부 브라운", art:"url('image_05.png?v=20261029_2')", file:"FILE.01 — 신발의 진실", phase:0,
+    text:"<b>브라운:</b> 스미스가 신발을 신고 들어가 경보기를 끄라고 했어요.<br><br><b>탐정 민호:</b> 거절했어?", 
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file01_6"}]
+  },
+
+  file01_6:{
+    speaker:"청소부 브라운", art:"url('image_05.png?v=20261029_2')", file:"FILE.01 — 신발의 진실", phase:0,
+    text:"거절할 수 없었어요.<br><br><b>탐정 민호:</b> 왜?<br><br><b>브라운:</b> 스미스가 제 약점을 잡고 협박했어요. 거절하면 모든 걸 폭로하겠다고 했어요.", 
+    choices:[{label:"진실을 듣는다.", proceed:true, next:"file01_7"}]
+  },
+
+  file01_7:{ speaker:"청소부 브라운", art:"url('image_05.png?v=20261029_2')", file:"FILE.01 — 신발의 진실", phase:0, text:"<b>사건 일지의 빈칸을 채우세요.</b><br><br><b>Smith ___ Brown wear the shoes.</b><br>알맞은 동사를 고르세요.", hint:"강제로 하게 한 상황에 알맞은 동사를 고르세요.", question:true, choices:[{tag:"A", label:"made", correct:true, next:"hub", unlock:"smith"},{tag:"B", label:"had", wrong:"w1"},{tag:"C", label:"let", wrong:"w1"}] }, w1:{
+    speaker:"탐정 민호", cls:"wrong", art:"url('image_05.png?v=20261029_2')", file:"FILE.01 — 추리 오류", phase:0,
+    text:"빈칸에는 made가 알맞아. 협박으로 강제로 하게 한 상황이야.",
+    hint:"Make: 강압 (선택의 여지 없음) vs Ask: 요청",
+    choices:[{label:"다시 사건 일지를 정리한다.", proceed:true, next:"file01_7"}]
+  },
+
+  file02:{
+    speaker:"탐정 민호", art:"url('smith_cctv_chain_consistent.png?v=20261029_2')", file:"FILE.02 — CCTV의 비밀", phase:1,
+    text:"(스미스를 심문실로 부른다) 스미스, CCTV를 손상 처리한 건 너야?<br><br><b>경비원 스미스:</b> (고개를 떨군다) 네, 맞습니다. 하지만 제가 직접 한 건 아니었어요.",
+    choices:[{label:"자세히 캐묻는다.", proceed:true, next:"file02_2"}]
+  },
+
+  file02_2:{
+    speaker:"경비원 스미스", art:"url('smith_cctv_chain_consistent.png?v=20261029_2')", file:"FILE.02 — CCTV의 비밀", phase:1,
+    text:"전기 기술자를 불렀어요. CCTV 점검과 수리는 제 담당 업무라서, 제가 직접 기술자를 섭외해 맡겼습니다. 그런데 그는 수리하는 척 CCTV를 망가뜨렸어요.<br><br><b>탐정 민호:</b> 누구의 사람이었어?", 
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file02_3"}]
+  },
+
+  file02_3:{
+    speaker:"경비원 스미스", art:"url('smith_cctv_chain_consistent.png?v=20261029_2')", file:"FILE.02 — CCTV의 비밀", phase:1,
+    text:"부관장이 소개하며 믿고 맡기라고 했어요. 저는 경비 책임자로서 CCTV 점검 업무를 기술자에게 맡긴 것뿐입니다. 일을 맡긴 것이지, 마음대로 하게 내버려 둔 건 아니에요.<br><br><b>탐정 민호:</b> 그럼 왜 기술자를 고용했지?", 
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file02_4"}]
+  },
+
+  file02_4:{ speaker:"경비원 스미스", art:"url('smith_cctv_chain_consistent.png?v=20261029_2')", file:"FILE.02 — CCTV의 비밀", phase:1, text:"<b>사건 일지의 빈칸을 채우세요.</b><br><br><b>Smith ___ the technician work on the CCTV.</b><br>알맞은 동사를 고르세요.", hint:"스미스가 담당 업무로 기술자에게 수리를 맡긴 상황이므로 HAVE입니다.", question:true, choices:[{tag:"A", label:"made", wrong:"w2_make"},{tag:"B", label:"had", correct:true, next:"file02_5"},{tag:"C", label:"let", wrong:"w2_let"}] }, w2_let:{
+    speaker:"탐정 민호", cls:"wrong", art:"url('smith_cctv_chain_consistent.png?v=20261029_2')", file:"FILE.02 — 추리 오류", phase:1,
+    text:"'let'은 그저 자유롭게 내버려 두었다는 뜻이야. 스미스는 기술자를 단순히 허락한 게 아니라, 목적을 가지고 수리 '업무'를 맡긴 거잖아.",
+    hint:"Have: 정당한 서비스 이용(수리) 관계에 가까움",
+    choices:[{label:"다시 사건 일지를 정리한다.", proceed:true, next:"file02_4"}]
+  },
+
+  w2_make:{
+    speaker:"탐정 민호", cls:"wrong", art:"url('smith_cctv_chain_consistent.png?v=20261029_2')", file:"FILE.02 — 추리 오류", phase:1,
+    text:"스미스가 기술자를 강압('make')했다고? 스미스는 기술자에게 단순히 수리를 맡겼을 뿐이야. 기술자가 CCTV를 부술 줄도 몰랐지.",
+    hint:"Make는 강압을 의미합니다. 스미스는 그저 정당하게 수리를 맡겼습니다.",
+    choices:[{label:"다시 사건 일지를 정리한다.", proceed:true, next:"file02_4"}]
+  },
+
+  file02_5:{
+    speaker:"탐정 민호", art:ART.cctv_route, file:"FILE.02 — CCTV의 비밀", phase:1,
+    text:"그런데 부관장이 널 협박했다는 거지?", 
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file02_6"}]
+  },
+
+  file02_6:{
+    speaker:"경비원 스미스", art:"url('smith_cctv_chain_consistent.png?v=20261029_2')", file:"FILE.02 — CCTV의 비밀", phase:1,
+    text:"<b>스미스:</b> 도박 빚을 갚지 않으면 감옥에 보내겠다고 협박했어요.<br><br><b>탐정 민호:</b> 그래서 거절할 수 없었군.",
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file02_7"}]
+  },
+
+  file02_7:{ speaker:"경비원 스미스", art:"url('smith_cctv_chain_consistent.png?v=20261029_2')", file:"FILE.02 — CCTV의 비밀", phase:1, text:"<b>사건 일지의 빈칸을 채우세요.</b><br><br><b>The deputy ___ Smith hire the technician.</b><br>알맞은 동사를 고르세요.", hint:"협박으로 거절할 수 없게 한 상황입니다.", question:true, choices:[{tag:"A", label:"made", correct:true, next:"hub", unlock:"deputy"},{tag:"B", label:"had", wrong:"w3"},{tag:"C", label:"let", wrong:"w3"}] }, w3:{
+    speaker:"탐정 민호", cls:"wrong", art:"url('smith_cctv_chain_consistent.png?v=20261029_2')", file:"FILE.02 — 추리 오류", phase:1,
+    text:"빈칸에는 made가 알맞아. 부관장은 빚으로 스미스를 협박했어.",
+    hint:"협박으로 선택의 여지가 없을 때는 'Make'를 사용합니다.",
+    choices:[{label:"다시 사건 일지를 정리한다.", proceed:true, next:"file02_7"}]
+  },
+
+  file03:{
+    speaker:"탐정 민호", art:ART.kim, file:"FILE.03 — 명령의 출처", phase:2,
+    text:"모든 지시는 당신이 내렸죠?<br><br><b>부관장 김:</b> 관장님이 횡령으로 저를 협박했어요.",
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file03_2"}]
+  },
+
+  file03_2:{
+    speaker:"탐정 민호", art:ART.kim, file:"FILE.03 — 명령의 출처", phase:2,
+    text:"<b>부관장 김:</b> 기술자를 소개하고, 스미스에게 고용하라고 지시했어요.",
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file03_3"}]
+  },
+
+  file03_3:{
+    speaker:"탐정 민호", art:ART.kim, file:"FILE.03 — 명령의 출처", phase:2,
+    text:"그 기술자는 관장님의 사람이었고, CCTV 손상을 미리 교육받았어요.",
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file03_4"}]
+  },
+
+  file03_4:{
+    speaker:"탐정 민호", art:ART.kim, file:"FILE.03 — 명령의 출처", phase:2,
+    text:"스미스가 고용해도 기술자는 관장님의 지시대로 움직였어요.",
+    choices:[{label:"계속 듣는다.", proceed:true, next:"file03_5"}]
+  },
+
+  file03_5:{ speaker:"탐정 민호", art:ART.kim, file:"FILE.03 — 명령의 출처", phase:2, text:"<b>사건 일지의 빈칸을 채우세요.</b><br><br><b>The deputy ___ Smith hire the technician.</b><br>알맞은 동사를 고르세요.", hint:"일을 맡기거나 하게 한 상황에 알맞은 동사를 고르세요.", question:true, choices:[{tag:"A", label:"made", wrong:"w4"},{tag:"B", label:"had", correct:true, next:"hub", unlock:"director"},{tag:"C", label:"let", wrong:"w4"}] }, w4:{
+    speaker:"탐정 민호", cls:"wrong", art:ART.kim, file:"FILE.03 — 추리 오류", phase:2,
+    text:"이 문장에서는 업무를 맡긴 의미이므로 had가 알맞아.",
+    hint:"정당한 업무 지시처럼 보일 때는 'Have'를 사용합니다.",
+    choices:[{label:"다시 사건 일지를 정리한다.", proceed:true, next:"file03_5"}]
+  },
+
+  file05:{
+    speaker:"탐정 민호", art:"url('scene4_confrontation.png?v=20261029_1')", file:"FILE.05 — 배후", phase:3,
+    text:"관장님, 모두 당신의 지시를 받았다고 증언했습니다.<br><br><b>박물관 관장:</b> 모두 정당한 업무 지시였습니다. 전기 수리와 CCTV 점검, 손님 안내였어요.",
+    choices:[{label:"증거를 들이민다.", proceed:true, next:"file05_2"}]
+  },
+
+  file05_2:{
+    speaker:"탐정 민호", art:ART.receipt, file:"FILE.05 — 배후", phase:3,
+    text:"그 지시들이 모두 다이아몬드 절도에 맞아떨어집니다. 정말 정당했습니까?<br><br><b>박물관 관장:</b> ...", 
+    choices:[{label:"압박한다.", proceed:true, next:"file05_3"}]
+  },
+
+  file05_3:{ speaker:"탐정 민호", art:"url('scene4_confrontation.png?v=20261029_1')", file:"FILE.05 — 배후", phase:3, text:"<b>사건 일지의 빈칸을 채우세요.</b><br><br><b>The director ___ the deputy director carry out the plan.</b><br>알맞은 동사를 고르세요.", hint:"협박으로 계획을 실행하게 한 상황입니다.", question:true, choices:[{tag:"A", label:"made", correct:true, next:"hub", unlock:"completed"},{tag:"B", label:"had", wrong:"w5"},{tag:"C", label:"let", wrong:"w5"}] }, w5:{
+    speaker:"탐정 민호", cls:"wrong", art:"url('scene4_confrontation.png?v=20261029_1')", file:"FILE.05 — 추리 오류", phase:3,
+    text:"'let'이 아니야. 관장은 횡령을 약점 잡아 부관장을 강제로 움직였어. 'make'가 맞아.",
+    hint:"협박으로 인한 억지 수행은 'Make'를 사용해야 합니다.",
+    choices:[{label:"다시 사건 일지를 정리한다.", proceed:true, next:"file05_3"}]
+  },
+
+  final_analysis:{
+    speaker:"탐정 민호", art:ART.desk, file:"최종 분석: 권력의 연쇄", phase:4,
+    text:"<b>서장:</b> 결론은?<br><b>탐정:</b> 브라운, 스미스, 부관장은 모두 협박당한 장기말. 관장이 배후였습니다. (관장 체포)",
+    choices:[{label:"최종 보고서 작성", proceed:true, next:"boss"}]
+  },
+
+  boss:{ speaker:"경찰청 보고 시스템", cls:"sys", art:ART.hacking_sys, file:"사건 최종 보고", phase:4, text:"[최종 보고서] 아래 인물 관계도를 보고, 관장이 부하 직원들에게 다이아몬드를 훔치게 한 사실을 영어 문장으로 쓰세요.<br><br><img src='case_relationship_map.png?v=20261030_1' alt='인물 관계도' style='display:block;width:100%;max-height:360px;object-fit:contain;margin:14px auto;border:1px solid rgba(216,166,87,.55);border-radius:6px;'>", hint:"정답 문장: The boss made his staff steal the diamond.", isInput:true, clues:[{text:"The boss"},{text:"his staff"},{text:"the diamond"}], answer:"the boss made his staff steal the diamond", next:"ending" }, bossWrong:{ speaker:"경찰청 보고 시스템", cls:"sys", art:ART.hacking_sys, file:"보고서 반려", phase:4, text:"[오류] 문장을 다시 확인하세요.<br>정답은 The boss made his staff steal the diamond. 입니다.", hint:"강제의 의미는 made, made 뒤에는 동사원형 steal을 씁니다.", choices:[{label:"다시 작성한다.", proceed:true, next:"boss"}] }, ending:{
+    speaker:"기자회견 뉴스", cls:"sys", art:ART.ending_new, file:"기자회견 종료", phase:4, win:true,
+    text:"[문자 메시지]<br>'축하합니다. Make, Have, Let의 차이를 이해했군요. 하지만 제보자의 정체는 아직 미스터리입니다. 다음 사건에서 만나요. —익명의 제보자'", 
+    choices:[{label:"마무리", proceed:true, next:"summary"}]
+  },
+
+  summary:{
+    speaker:"탐정 민호", art:ART.desk, file:"학습 정리", phase:4, win:true,
+    text:"<b>📊 학습 정리</b><br><br><b>MAKE</b> 강제로 하게 함<br><b>HAVE</b> 일을 맡기거나 하게 함<br><b>LET</b> 하도록 허락하거나 막지 않음<br><br>이 사건에서는 협박은 MAKE, 업무 지시는 HAVE, 방관은 LET입니다.",
+    choices:[{label:"사건 종료", proceed:true, next:"win"}]
+  }
+};
+
+/* phase order for progress dots */
+const PHASES = ["FILE.01", "FILE.02", "FILE.03", "FILE.05", "CLEAR"];
+
+/* ---- DOM ---- */
+const $ = id => document.getElementById(id);
+/* ===== Click sound effects (Web Audio API, no external files) ===== */
+let _audioCtx = null;
+function _getAudioContext(){
+  if(_audioCtx) return _audioCtx;
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return null;
+    _audioCtx = new Ctx();
+  }catch(e){
+    return null;
+  }
+  return _audioCtx;
+}
+
+/* Synthesized "camera shutter" click for zoom-in hotspot taps.
+   Two-stage: a sharp transient (high-pass noise burst) + a short
+   tonal "thunk" that gives it body. Total length ~120ms.            */
+
+/* ===== Opening BGM (web-audio synth, no external files) =====
+   A spare, unsettling underscore: low drone + slow minor arpeggio +
+   breathy noise wash. Built procedurally so the HTML stays a single
+   file. Fades in when the opening screen mounts and fades out the
+   moment the user starts the game (or restarts from game over). */
+let _bgm = null;
+function startOpeningBGM(){
+  if(_bgm && !_bgm.stopped) return;       // already running
+  const ctx = _getAudioContext();
+  if(!ctx) return;
+  if(ctx.state === "suspended"){
+    ctx.resume().catch(()=>{});
+  }
+  const now = ctx.currentTime;
+
+  // master gain (fades in/out)
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, now);
+  master.gain.linearRampToValueAtTime(0.18, now + 2.5);    // slow fade-in
+  master.connect(ctx.destination);
+
+  // ----- LAYER 1: low drone (two detuned saws into a lowpass) -----
+  const droneA = ctx.createOscillator();
+  droneA.type = "sawtooth"; droneA.frequency.value = 55;     // ~A1
+  const droneB = ctx.createOscillator();
+  droneB.type = "sawtooth"; droneB.frequency.value = 55.4;   // detune for movement
+  const droneFilter = ctx.createBiquadFilter();
+  droneFilter.type = "lowpass";
+  droneFilter.frequency.value = 220;
+  droneFilter.Q.value = 6;
+  const droneGain = ctx.createGain();
+  droneGain.gain.value = 0.55;
+  // slow LFO sweeping filter cutoff for "breathing" effect
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 0.08;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 80;
+  lfo.connect(lfoGain).connect(droneFilter.frequency);
+  droneA.connect(droneFilter);
+  droneB.connect(droneFilter);
+  droneFilter.connect(droneGain).connect(master);
+  droneA.start(now); droneB.start(now); lfo.start(now);
+
+  // ----- LAYER 2: breath of pink-ish noise (storm/wind texture) -----
+  const noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  // pinkish noise via simple running average
+  let last = 0;
+  for(let i = 0; i < nd.length; i++){
+    const w = Math.random() * 2 - 1;
+    last = (last + 0.02 * w) / 1.02;
+    nd[i] = last * 3.5;
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuf;
+  noise.loop = true;
+  const noiseFilter = ctx.createBiquadFilter();
+  noiseFilter.type = "bandpass";
+  noiseFilter.frequency.value = 600;
+  noiseFilter.Q.value = 1.2;
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.value = 0.06;
+  // slow tremolo on the wind so it feels alive
+  const noiseLFO = ctx.createOscillator();
+  noiseLFO.frequency.value = 0.15;
+  const noiseLFOGain = ctx.createGain();
+  noiseLFOGain.gain.value = 0.04;
+  noiseLFO.connect(noiseLFOGain).connect(noiseGain.gain);
+  noise.connect(noiseFilter).connect(noiseGain).connect(master);
+  noise.start(now); noiseLFO.start(now);
+
+  // ----- LAYER 3: sparse minor arpeggio (A minor: A4, C5, E5, G5) -----
+  // Plays a slow descending/ascending pattern, with long gaps between
+  // notes. Volume is low so it sits behind the drone.
+  const notes = [220.00, 261.63, 329.63, 392.00];   // A3, C4, E4, G4 (one octave down for warmth)
+  let step = 0;
+  // Persistent gain node we can ramp down on stop
+  const arpBus = ctx.createGain();
+  arpBus.gain.value = 1;
+  arpBus.connect(master);
+
+  function playArpNote(t, freq){
+    const o = ctx.createOscillator();
+    o.type = "sine";
+    o.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.18, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+    // slight detuned partial for shimmer
+    const o2 = ctx.createOscillator();
+    o2.type = "sine";
+    o2.frequency.value = freq * 2.005;
+    const g2 = ctx.createGain();
+    g2.gain.setValueAtTime(0.0001, t);
+    g2.gain.exponentialRampToValueAtTime(0.06, t + 0.04);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+    o.connect(g).connect(arpBus);
+    o2.connect(g2).connect(arpBus);
+    o.start(t); o.stop(t + 2.3);
+    o2.start(t); o2.stop(t + 1.7);
+  }
+
+  // schedule arpeggio on a recurring timer; stop() flags will gate this
+  const arpInterval = setInterval(()=>{
+    if(_bgm && _bgm.stopped) return;
+    const t = ctx.currentTime + 0.05;
+    // pattern: A C E G G E C A, with random skips for sparseness
+    const idx = step % notes.length;
+    const seq = (step % 8) < 4 ? idx : (notes.length - 1 - idx);
+    if(Math.random() > 0.25){   // 75% chance to play; gaps keep it eerie
+      playArpNote(t, notes[seq]);
+    }
+    step++;
+  }, 1850);   // every ~1.85s — slow, brooding
+
+  _bgm = {
+    ctx, master, droneA, droneB, lfo, noise, noiseLFO,
+    arpInterval, stopped: false
+  };
+}
+
+function stopOpeningBGM(){
+  if(!_bgm || _bgm.stopped) return;
+  _bgm.stopped = true;
+  const ctx = _bgm.ctx;
+  const now = ctx.currentTime;
+  // fade out over 1.0s, then stop all sources
+  try{
+    _bgm.master.gain.cancelScheduledValues(now);
+    _bgm.master.gain.setValueAtTime(_bgm.master.gain.value, now);
+    _bgm.master.gain.linearRampToValueAtTime(0.0001, now + 1.0);
+  }catch(e){}
+  clearInterval(_bgm.arpInterval);
+  setTimeout(()=>{
+    try{ _bgm.droneA.stop(); _bgm.droneB.stop(); _bgm.lfo.stop(); }catch(e){}
+    try{ _bgm.noise.stop(); _bgm.noiseLFO.stop(); }catch(e){}
+    try{ _bgm.master.disconnect(); }catch(e){}
+    _bgm = null;
+  }, 1100);
+}
+
+function playZoomClick(){
+  const ctx = _getAudioContext();
+  if(!ctx) return;
+  // Some browsers start the context suspended until a user gesture;
+  // hotspot click counts as a gesture, so resume if needed.
+  if(ctx.state === "suspended"){
+    ctx.resume().catch(()=>{});
+  }
+  const now = ctx.currentTime;
+
+  // --- Stage 1: noise transient (the "click" snap) ---
+  const noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.04), ctx.sampleRate);
+  const data = noiseBuf.getChannelData(0);
+  for(let i = 0; i < data.length; i++){
+    // exponential decay envelope built into the noise sample
+    const env = Math.pow(1 - i/data.length, 2);
+    data[i] = (Math.random() * 2 - 1) * env;
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuf;
+  const noiseFilter = ctx.createBiquadFilter();
+  noiseFilter.type = "highpass";
+  noiseFilter.frequency.value = 2500;
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.35, now);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+  noise.connect(noiseFilter).connect(noiseGain).connect(ctx.destination);
+  noise.start(now);
+  noise.stop(now + 0.05);
+
+  // --- Stage 2: short tonal body ("thunk") ---
+  osc.stop(now + 0.13);
+}
+
+const stage=$("stage"), sceneImg=$("scene-img"), speaker=$("speaker"),
+      dialogText=$("dialog-text"), choicesEl=$("choices"), dialog=$("dialog"),
+      progress=$("progress"), hintModal=$("hint-modal"),
+      hintText=$("hint-text"), inputArea=$("input-area"), finalInput=$("final-input"),
+      clueWords=$("clue-words"), timerEl=$("timer"), dotsEl=$("dots");
+
+let current="start";
+let timerInt=null;
+let timeLeft=30;
+const MAX_HINT_USES = 3;
+let hintUsesLeft = MAX_HINT_USES;
+const hintCountEl = $("hint-count");
+const hintRemainingEl = $("hint-remaining");
+function updateHintCards(){
+  if(hintCountEl) hintCountEl.textContent = String(hintUsesLeft);
+  if(hintRemainingEl) hintRemainingEl.textContent = `남은 힌트카드: ${hintUsesLeft}장`;
+  const btn = $("hint-btn");
+  if(btn){
+    btn.title = `힌트카드 ${hintUsesLeft}장 남음`;
+    btn.setAttribute("aria-label", `힌트카드 ${hintUsesLeft}장 남음`);
+    btn.classList.toggle("exhausted", hintUsesLeft === 0);
+  }
+}
+function resetHintCards(){
+  hintUsesLeft = MAX_HINT_USES;
+  updateHintCards();
+}
+updateHintCards();
+
+/* build progress dots once */
+PHASES.forEach(()=>{const d=document.createElement("div");d.className="dot";dotsEl.appendChild(d);});
+
+function setDots(phase){
+  [...dotsEl.children].forEach((d,i)=>{
+    d.className="dot"+(i<phase?" done":i===phase?" active":"");
+  });
+}
+
+/* ---- typewriter effect ----
+   n.text may contain <span> markup. We type character by character while
+   keeping any HTML tags intact (tags are emitted instantly, not typed).   */
+let typeTimer=null;
+let typing=false;
+
+/* Synthesized typewriter click — short noise burst, varied pitch for life.
+   Uses the shared AudioContext so it works with the BGM autoplay-unlock flow. */
+let _lastTypeSoundTime = 0;
+function playTypeSound(ch){
+  // skip pure whitespace; play for everything else including punctuation
+  if(!ch || ch === "\n" || ch === "\r" || ch === "\t") return;
+  const ctx = _getAudioContext && _getAudioContext();
+  if(!ctx) return;
+  // try to wake AudioContext if it's still asleep
+  if(ctx.state === "suspended"){
+    ctx.resume().catch(()=>{});
+    // don't return — still try to play; if it fails, catch block handles it
+  }
+  // throttle so very fast typing isn't a buzz
+  const now = ctx.currentTime;
+  if(now - _lastTypeSoundTime < 0.022) return;
+  _lastTypeSoundTime = now;
+
+  try{
+    // short noise burst — like a key strike
+    const dur = 0.05;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0; i<data.length; i++){
+      // quick decay envelope
+      const env = Math.pow(1 - (i / data.length), 2.2);
+      data[i] = (Math.random() * 2 - 1) * env;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+
+    // bandpass filter to give it a "click" character, slight pitch variation
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 1600 + Math.random() * 1400;  // 1600-3000 Hz
+    filter.Q.value = 2.0;
+
+    const gain = ctx.createGain();
+    // louder so it's clearly audible over BGM/ambience
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    src.connect(filter).connect(gain).connect(ctx.destination);
+    src.start(now);
+    src.stop(now + dur);
+  }catch(e){ /* silently ignore audio errors */ }
+}
+
+function typeText(html, done){
+  clearTimeout(typeTimer);
+
+  typing=true;
+  dialogText.innerHTML="";
+  dialogText.classList.add("typing");
+  // tokenize into chars and whole tags
+  const tokens=[];
+  let i=0;
+  while(i<html.length){
+    if(html[i]==="<"){
+      const close=html.indexOf(">",i);
+      tokens.push(html.slice(i,close+1));   // whole tag as one token
+      i=close+1;
+    }else{
+      tokens.push(html[i]);                 // single char
+      i++;
+    }
+  }
+  let built="";
+  let t=0;
+  function step(){
+    if(t>=tokens.length){
+      typing=false;
+      dialogText.classList.remove("typing");
+      if(done)done();
+      return;
+    }
+    built+=tokens[t];
+    dialogText.innerHTML=built+'<span class="caret"></span>';
+    // play sound only for visible characters (not tags)
+    if(tokens[t].length === 1){
+      playTypeSound(tokens[t]);
+    }
+    t++;
+    // tags appear instantly; characters get a small delay
+    const delay = tokens[t-1].length>1 ? 0 : 28;
+    typeTimer=setTimeout(step,delay);
+  }
+  step();
+}
+
+/* skip typing on tap */
+function finishTyping(){
+  if(!typing)return false;
+  clearTimeout(typeTimer);
+  typing=false;
+  dialogText.innerHTML=pendingHTML;
+  dialogText.classList.remove("typing");
+  showChoicesNow();
+  return true;
+}
+let pendingHTML="";
+let pendingShowChoices=null;
+function showChoicesNow(){
+  if(pendingShowChoices){const fn=pendingShowChoices;pendingShowChoices=null;fn();}
+}
+
+
+
+window.phoneOpened = false;
+function openPhone() {
+  if (window.phoneOpened) return;
+  window.phoneOpened = true;
+  document.getElementById('phone-overlay').style.display = 'none';
+  if(typeof stopVibration === "function") stopVibration();
+  if(typeof playType === "function") playType(100);
+  
+  // Start the chat logic
+  document.getElementById("chat-ui").style.display = "flex";
+  playChat(STORY["prologue"].messages, () => {
+    document.getElementById("dialog").style.display = "block";
+    document.getElementById("speaker").style.display = "none";
+    document.getElementById("dialog-text").style.display = "none";
+    const chEl=document.getElementById("choices");
+    chEl.style.display="flex";
+    chEl.innerHTML="";
+    STORY["prologue"].choices.forEach(c=>chEl.appendChild(makeChoice(c)));
+  });
+}
+
+
+/* ---- render a node ----
+   opts.skipInvestigation: for A-mode retries, jump straight to the question  */
+
+
+let vibOsc = null, vibLfo = null, vibGain = null;
+function playVibration() {
+  const ctx = typeof _getAudioContext === "function" ? _getAudioContext() : null;
+  if(!ctx) return;
+  if(ctx.state === "suspended") ctx.resume().catch(()=>{});
+  const now = ctx.currentTime;
+  
+  vibOsc = ctx.createOscillator();
+  vibOsc.type = "sawtooth";
+  vibOsc.frequency.value = 55; // Low mechanical hum
+  
+  vibLfo = ctx.createOscillator();
+  vibLfo.type = "square";
+  vibLfo.frequency.value = 8; // fast buzzing rate
+  
+  const envelope = ctx.createOscillator();
+  envelope.type = "square";
+  envelope.frequency.value = 1.5; // buzz... buzz... pattern
+  
+  const envGain = ctx.createGain();
+  envGain.gain.value = 0.5;
+  envelope.connect(envGain);
+  
+  vibGain = ctx.createGain();
+  vibGain.gain.value = 0;
+  
+  vibLfo.connect(vibGain.gain);
+  envGain.connect(vibGain.gain);
+  
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 400;
+  
+  vibOsc.connect(vibGain).connect(filter).connect(ctx.destination);
+  
+  vibOsc.start(now);
+  vibLfo.start(now);
+  envelope.start(now);
+}
+
+function stopVibration() {
+  if(vibOsc) {
+    try { vibOsc.stop(); } catch(e){}
+    vibOsc = null;
+  }
+  if(vibLfo) {
+    try { vibLfo.stop(); } catch(e){}
+    vibLfo = null;
+  }
+}
+
+let chatTimeout;
+function playChat(messages, cb) {
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = '';
+  document.getElementById('chat-ui').style.display = 'flex';
+  
+  let i = 0;
+  function addMsg() {
+    if(current !== "prologue" && !document.getElementById('chat-ui').style.display) return;
+    if(i >= messages.length) {
+      if(cb) cb();
+      return;
+    }
+    const m = messages[i];
+    const div = document.createElement('div');
+    div.className = 'chat-bubble ' + m.type;
+    div.innerHTML = (m.sender ? `<div class="chat-sender">${m.sender}</div>` : '') + m.text;
+    container.appendChild(div);
+    if (m.type === 'left') {
+      if(typeof playDing === "function") playDing();
+    } else {
+      if(typeof playPop === "function") playPop();
+    }
+    
+    // Auto scroll to bottom
+    const chatUi = document.getElementById('chat-ui');
+    chatUi.scrollTop = chatUi.scrollHeight;
+    
+    i++;
+    chatTimeout = setTimeout(addMsg, 1200);
+  }
+  clearTimeout(chatTimeout);
+  chatTimeout = setTimeout(addMsg, 800);
+}
+  
+
+window.boardState = {
+  brown: true,
+  smith: false,
+  deputy: false,
+  director: false,
+  completed: false
+};
+
+const boardNodesData = {
+  director: { x: 50, y: 15, label: "관장", target: "file05", icon: "🏛️" },
+  deputy: { x: 50, y: 35, label: "부관장", target: "file03", icon: "💼" },
+  smith: { x: 30, y: 55, label: "경비원 스미스", target: "file02", icon: "🔦" },
+  tech: { x: 70, y: 55, label: "전기 기술자", target: null, icon: "🔌" },
+  brown: { x: 30, y: 80, label: "청소부 브라운", target: "file01", icon: "🧹" }
+};
+
+const boardEdgesData = [
+  { from: "smith", to: "brown", label: "Made (협박)", req: "smith" },
+  { from: "deputy", to: "smith", label: "Made (빚협박)", req: "deputy" },
+  { from: "smith", to: "tech", label: "Had (수리의뢰)", req: "deputy" },
+  { from: "director", to: "deputy", label: "Made (횡령협박)", req: "director" }
+];
+
+
+function drawEvidenceBoard() {
+  const container = document.getElementById("board-nodes");
+  const svg = document.getElementById("board-lines");
+  container.innerHTML = "";
+  svg.innerHTML = "";
+  
+  const evBoard = document.getElementById("evidence-board");
+  document.getElementById("relationship-map")?.remove();
+  const relMap = document.createElement("img");
+  relMap.id = "relationship-map";
+  relMap.src = "case_relationship_map_corrected.png?v=20261023_1";
+  relMap.alt = "인물 관계도";
+  relMap.style.cssText = "position:absolute; left:2%; top:58%; width:27%; max-height:25%; object-fit:contain; opacity:.92; z-index:1; border:1px solid rgba(216,166,87,.5); border-radius:6px; box-shadow:0 0 18px rgba(0,0,0,.7);";
+  evBoard?.appendChild(relMap);
+
+  if(evBoard && ART.corkboard) {
+    evBoard.style.backgroundImage = ART.corkboard;
+    evBoard.style.backgroundSize = 'cover';
+    evBoard.style.backgroundPosition = 'center';
+    evBoard.style.filter = 'brightness(0.72) contrast(1.15) sepia(0.1)';
+    evBoard.style.boxShadow = 'inset 0 0 100px rgba(0,0,0,0.9)';
+  }
+  
+  // Custom positions for nodes based on the background image layout
+  const layout = {
+    tech: { left: "15%", top: "25%", width: "15%", height: "25%" },     // 1. 금고/다이아 관련 (가상 위치)
+    director: { left: "32%", top: "25%", width: "15%", height: "25%" }, // 2. CCTV
+    deputy: { left: "55%", top: "33%", width: "12%", height: "30%" },   // 3. 첫번째 실루엣
+    smith: { left: "68%", top: "33%", width: "12%", height: "30%" },    // 4. 두번째 실루엣
+    brown: { left: "81%", top: "33%", width: "12%", height: "30%" }     // 5. 세번째 실루엣
+  };
+
+  Object.keys(boardNodesData).forEach((key) => {
+    const data = boardNodesData[key];
+    const isUnlocked = window.boardState[key];
+    const pos = layout[key] || { left: "50%", top: "50%", width: "10%", height: "20%" };
+    
+    const div = document.createElement("div");
+    div.className = "board-node";
+    div.style.position = "absolute";
+    div.style.left = pos.left;
+    div.style.top = pos.top;
+    div.style.width = pos.width;
+    div.style.height = pos.height;
+    div.style.transition = "transform 0.3s, box-shadow 0.3s";
+    div.style.boxShadow = "0 15px 30px rgba(0,0,0,0.9), inset 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255,255,255,0.1)";
+    div.style.borderRadius = "4px";
+    
+    if (isUnlocked) {
+      div.style.cursor = "pointer";
+      div.onmouseenter = () => { div.style.transform = "scale(1.1) perspective(500px) rotateX(2deg)"; div.style.boxShadow = "0 0 35px rgba(226,48,72,1), 0 20px 40px rgba(0,0,0,1)"; div.style.zIndex = "10"; };
+      div.onmouseleave = () => { div.style.transform = "scale(1)"; div.style.boxShadow = "0 15px 30px rgba(0,0,0,0.9), inset 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255,255,255,0.1)"; div.style.zIndex = "1"; };
+    } else {
+      div.style.cursor = "not-allowed";
+      div.style.opacity = "0.6";
+      div.style.filter = "grayscale(100%)";
+    }
+    
+    let bgSrc = "";
+    if (isUnlocked) {
+      if (key === "brown") bgSrc = ART.brown_scene1;
+      if (key === "smith") bgSrc = ART.smith_scene1;
+      if (key === "deputy") bgSrc = ART.deputy || ART.smith_scene1; // 임시
+      if (key === "director") bgSrc = ART.director || ART.smith_scene1; // 임시
+      if (key === "tech") bgSrc = ART.tech || ART.smith_scene1; // 임시
+    }
+    
+    if (isUnlocked && bgSrc) {
+      div.innerHTML = `<div style="width:100%; height:100%; background-image: ${bgSrc}; background-size: cover; background-position: center; border: 2px solid var(--red-bright); border-radius: 4px;"></div>
+                       <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 2px 8px; font-size: 12px; white-space: nowrap; border: 1px solid var(--red); border-radius: 4px;">${data.label}</div>`;
+    } else {
+      div.innerHTML = `<div style="width:100%; height:100%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(20,20,20,0.9) 0%, rgba(5,5,5,1) 100%); border: 2px solid rgba(80,80,80,0.8); box-shadow: inset 0 0 20px rgba(0,0,0,1); border-radius: 4px; font-size: 30px; color: rgba(100,100,100,0.5); text-shadow: none; font-family: 'Special Elite', monospace;"><i class="fa-solid fa-lock"></i></div>
+                       <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: #000; color: #666; padding: 2px 8px; font-size: 12px; white-space: nowrap; border: 1px solid #666; border-radius: 4px;">단서 부족</div>`;
+    }
+    
+    // 순서대로 심문하도록 제한
+    div.onclick = () => {
+      if (!isUnlocked) {
+        showNotification("아직 조사할 단서가 부족합니다. 이전 용의자부터 심문하여 단서를 얻으세요.");
+        return;
+      }
+      if (data.target) {
+        render(data.target);
+      } else {
+        showNotification("이 단서는 아직 조사할 수 없습니다.");
+      }
+    };
+    container.appendChild(div);
+  });
+  
+  // Draw red string edges
+  boardEdgesData.forEach(edge => {
+    // 해당 관계가 밝혀졌을 때만 (from과 to 모두 클리어)
+    if (window.boardState[edge.from] && window.boardState[edge.to]) {
+      const fromPos = layout[edge.from];
+      const toPos = layout[edge.to];
+      if (!fromPos || !toPos) return;
+
+      const fx = parseFloat(fromPos.left) + parseFloat(fromPos.width)/2;
+      const fy = parseFloat(fromPos.top) + parseFloat(fromPos.height)/2;
+      const tx = parseFloat(toPos.left) + parseFloat(toPos.width)/2;
+      const ty = parseFloat(toPos.top) + parseFloat(toPos.height)/2;
+      
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", fx + "%");
+      line.setAttribute("y1", fy + "%");
+      line.setAttribute("x2", tx + "%");
+      line.setAttribute("y2", ty + "%");
+      line.setAttribute("stroke", "var(--red-bright)");
+      line.setAttribute("stroke-width", "4");
+      line.style.filter = "drop-shadow(2px 2px 4px rgba(0,0,0,0.8))";
+      
+      const midX = (fx + tx) / 2;
+      const midY = (fy + ty) / 2;
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", midX + "%");
+      text.setAttribute("y", (midY - 10) + "%");
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("fill", "#fff");
+      text.setAttribute("font-size", "14px");
+      text.setAttribute("font-weight", "bold");
+      text.style.textShadow = "2px 2px 4px #000, -1px -1px 2px #e23048";
+      text.textContent = edge.label;
+      
+      svg.appendChild(line);
+      svg.appendChild(text);
+    }
+  });
+  
+  if(window.boardState.completed) {
+    document.getElementById("btn-final-report").style.display = "block";
+  } else {
+    document.getElementById("btn-final-report").style.display = "none";
+  }
+}
+function showNotification(msg) {
+  const div = document.createElement("div");
+  div.style.position = "absolute"; div.style.top = "20px"; div.style.left = "50%"; div.style.transform = "translateX(-50%)";
+  div.style.background = "var(--red)"; div.style.color = "#fff"; div.style.padding = "10px 20px";
+  div.style.borderRadius = "20px"; div.style.zIndex = "9999"; div.style.fontWeight = "bold";
+  div.style.boxShadow = "0 4px 10px rgba(226,48,72,0.6)"; div.style.animation = "fadein 0.3s, fadeout 0.3s 2.7s forwards";
+  div.innerText = msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 3000);
+}
+function render(id,opts){
+  const evBoard = document.getElementById("evidence-board");
+  if(id === "hub") {
+    if(evBoard) evBoard.style.display = "block";
+    const d = document.getElementById("dialog"); if(d) d.style.display = "none";
+    const c = document.getElementById("chat-ui"); if(c) c.style.display = "none";
+    const ch = document.getElementById("choices"); if(ch) ch.style.display = "none";
+    const sp = document.getElementById("speaker"); if(sp) sp.style.display = "none";
+    const phone = document.getElementById("phone-overlay"); if(phone) phone.style.display = "none";
+    const h = document.getElementById("hunt-banner"); if(h) h.classList.remove("show");
+    
+    // Hide the scene image container or make it blank
+    const sceneImg = document.getElementById("scene-img");
+    if(sceneImg) { sceneImg.style.backgroundImage = "none"; sceneImg.style.opacity = 0; }
+    
+    drawEvidenceBoard();
+    return;
+  } else {
+    if(evBoard) evBoard.style.display = "none";
+  }
+
+  opts=opts||{};
+  const n=STORY[id];
+  // reset Act-1 hub state when starting over
+  if(id==="start"){
+    hubVisited.clear();
+    resetHintCards();
+  }
+  current=id;
+  stopTimer();
+  clearTimeout(typeTimer);
+
+  
+  if(n.type === "chat") {
+    // Chat scenes still carry a story illustration (the anonymous letter).
+    sceneImg.style.opacity = 1;
+    sceneImg.style.setProperty('background-image', n.art || ART.desk, 'important');
+    document.getElementById("dialog").style.display = "none";
+    document.getElementById("choices").style.display = "none";
+    
+    if (!window.phoneOpened) {
+      document.getElementById("phone-overlay").style.display = "flex";
+      if(typeof playVibration === "function") playVibration();
+      // We return here, waiting for the user to click the phone which calls openPhone()
+    } else {
+      document.getElementById("chat-ui").style.display = "flex";
+      playChat(n.messages, () => {
+        document.getElementById("dialog").style.display = "block";
+        document.getElementById("speaker").style.display = "none";
+        document.getElementById("dialog-text").style.display = "none";
+        const chEl=document.getElementById("choices");
+        chEl.style.display="flex";
+        chEl.innerHTML="";
+        n.choices.forEach(c=>chEl.appendChild(makeChoice(c)));
+      });
+    }
+    return;
+  } else {
+    const chatUi = document.getElementById("chat-ui");
+    if(chatUi) chatUi.style.display = "none";
+    const phoneUi = document.getElementById("phone-overlay");
+    if(phoneUi) phoneUi.style.display = "none";
+    document.getElementById("dialog").style.display = "block";
+    document.getElementById("speaker").style.display = "block";
+    document.getElementById("dialog-text").style.display = "block";
+  }
+
+
+  sceneImg.style.opacity=0;
+  setTimeout(()=>{
+    const contextualArt = ({
+      file01:"url('image_05.png?v=20261029_3')", file01_2:"url('image_05.png?v=20261029_3')", file01_3:"url('image_06.png?v=20261029_3')", file01_4:"url('image_06.png?v=20261029_3')",
+      file01_5:"url('smith_orders_brown_scene.png?v=20261029_1')", file01_6:"url('smith_orders_brown_scene.png?v=20261029_1')", file01_7:"url('smith_orders_brown_scene.png?v=20261029_1')",
+      file02:"url('scene_smith_cctv_reveal.png?v=20261029_3')", file02_2:"url('scene_smith_technician_have.png?v=20261029_3')", file02_3:"url('scene_smith_technician_have.png?v=20261029_3')", file02_4:"url('scene_smith_technician_have.png?v=20261029_3')", file02_5:"url('smith_cctv_chain_consistent.png?v=20261029_3')", file02_6:"url('smith_cctv_chain_consistent.png?v=20261029_3')", file02_7:"url('smith_cctv_chain_consistent.png?v=20261029_3')",
+      file03:"url('deputy_confession_consistent.png?v=20261029_3')", file03_2:"url('deputy_command_chain_consistent.png?v=20261029_3')", file03_3:"url('deputy_command_chain_consistent.png?v=20261029_3')", file03_4:"url('deputy_command_chain_consistent.png?v=20261029_3')", file03_5:"url('deputy_command_chain_consistent.png?v=20261029_3')", w4:"url('deputy_command_chain_consistent.png?v=20261029_3')",
+      file05:"url('scene4_confrontation.png?v=20261029_1')"
+    })[id] || n.art || ART.desk;
+    sceneImg.style.setProperty('background-image', contextualArt, 'important');
+    sceneImg.style.setProperty('background-size', 'contain', 'important');
+    sceneImg.style.setProperty('background-repeat', 'no-repeat', 'important');
+    sceneImg.style.setProperty('background-position', 'center', 'important');
+    // Toggle 'ending-art' class so mobile CSS uses contain (no crop) for winFinal ending image
+    if(n.art === ART.winFinal){
+      sceneImg.classList.add("ending-art");
+    } else {
+      sceneImg.classList.remove("ending-art");
+    }
+    speaker.textContent=n.speaker;
+    speaker.className=n.cls||"";
+    hintText.textContent=n.hint || "이 장면에는 별도 힌트가 없습니다. 대사를 다시 읽고 단서를 찾아보세요.";
+    progress.textContent=n.file;
+    setDots(n.phase);
+    stage.classList.toggle("win",!!n.win);
+
+    // hide choices/input/investigation until text finishes typing
+    choicesEl.innerHTML="";
+    choicesEl.style.display="none";
+    inputArea.style.display="none";
+    timerEl.style.display="none";
+    clearHotspots();
+
+    // A-mode retry: skip the intro+clue-hunt, go straight to the question text
+    const aRetry = opts.skipInvestigation && n.investigate && n.invMode==="inspect-then-choose";
+    // Hub return: when re-entering the hub after completing a sub-scene,
+    // show the contextual "마쳤다" line instead of the default intro.
+    const hubReturn = n.isHub && opts.hubReturnedFrom;
+    if(hubReturn){
+      hubVisited.add(opts.hubReturnedFrom);
+    }
+    pendingHTML = aRetry ? n.afterText
+                 : hubReturn ? (n.returnText[opts.hubReturnedFrom]||n.text)
+                 : n.text;
+
+    // what to reveal once typing completes
+    pendingShowChoices=function(){
+      if(n.isInput){
+        choicesEl.style.display="none";
+        inputArea.style.display="flex";
+        buildClues(n.clues, n.scrambleWords);
+        finalInput.value="";
+        finalInput.style.display=n.scrambleWords ? "none" : "block";
+        timerEl.style.display="block";
+        startTimer();
+        setTimeout(()=>finalInput.focus(),120);
+      }else if(n.isHub){
+        // all targets done -> auto-advance to n.next after a beat
+        if(hubVisited.size>=n.targets.length){
+          setTimeout(()=>{
+            // small "proceed" button rather than abrupt jump
+            choicesEl.style.display="flex";
+            choicesEl.innerHTML="";
+            choicesEl.appendChild(makeChoice({
+              label:"무전기를 켠다.",proceed:true,next:n.next
+            }));
+          },200);
+        }else{
+          startHub(n);
+        }
+      }else if(n.investigate){
+        if(aRetry){
+          // straight to the grammar choices in the same scene
+          speaker.textContent=n.questionSpeaker||n.speaker;
+          choicesEl.style.display="flex";
+          choicesEl.innerHTML="";
+          n.choices.forEach(c=>choicesEl.appendChild(makeChoice(c)));
+        }else{
+          startInvestigation(n);
+        }
+      }else{
+        choicesEl.style.display="flex";
+        choicesEl.innerHTML="";
+        n.choices.forEach(c=>choicesEl.appendChild(makeChoice(c)));
+      }
+    };
+
+    sceneImg.style.opacity=1;
+    stage.classList.add("playing");
+
+    // wrong-answer screens jolt on entry
+    const isWrong = id[0]==="w" || id==="bossWrong" || id==="midBossWrong";
+    if(isWrong){
+      dialog.classList.remove("shake");
+      void dialog.offsetWidth;
+      dialog.classList.add("shake");
+    }
+
+    typeText(pendingHTML, showChoicesNow);
+  },280);
+}
+
+function makeChoice(c){
+  const b=document.createElement("button");
+  b.className="choice"+(c.proceed?" proceed":"");
+  if(c.tag){
+    const t=document.createElement("span");
+    t.className="tag";t.textContent=c.tag;
+    b.appendChild(t);
+  }
+  b.appendChild(document.createTextNode(c.label));
+  b.onclick=()=>handleChoice(c);
+  return b;
+}
+
+/* ---- choice handling: correct advances, wrong -> dedicated screen ---- */
+function handleChoice(c){
+  if(c.unlock) {
+    window.boardState[c.unlock] = true;
+    showNotification("사건 보드가 업데이트되었습니다!");
+  }
+  if(c.proceed || c.correct){
+    const opts={};
+    if(c.skipInvestigation)opts.skipInvestigation=true;
+    if(c.hubKey)opts.hubReturnedFrom=c.hubKey;
+    render(c.next, opts);
+  }else if(c.wrong){
+    render(c.wrong);
+  }
+}
+
+/* tap dialog to skip the typewriter */
+dialog.addEventListener("click",e=>{
+  // don't hijack clicks on buttons/inputs
+  if(e.target.closest("button")||e.target.closest("input"))return;
+  finishTyping();
+});
+
+/* ===== Investigation mode: zoom-in clue hunting ===== */
+const hotspotLayer=$("hotspot-layer"), huntBanner=$("hunt-banner"),
+      zoomEl=$("zoom"), zoomFrame=$("zoom-frame"), zoomName=$("zoom-name"),
+      zoomObs=$("zoom-obs");
+let investigateNode=null;
+let foundClues=new Set();
+let cluesRevealed=false;     // whether hint has revealed hotspot markers
+
+/* ===== Hub mode: free-exploration of the museum ===== */
+let hubNode=null;
+const hubVisited=new Set();   // persists across navigations within Act 1
+
+function clearHotspots(){
+  hotspotLayer.innerHTML="";
+  huntBanner.classList.remove("show");
+  dialog.classList.remove("dimmed");
+  investigateNode=null;
+  hubNode=null;
+  foundClues=new Set();
+  cluesRevealed=false;
+}
+
+function startInvestigation(n){
+  investigateNode=n;
+  foundClues=new Set();
+  cluesRevealed=false;
+  hotspotLayer.innerHTML="";
+  // A-mode (inspect-then-choose) keeps the dialog; B-mode (collect) dims it
+  if(n.invMode!=="inspect-then-choose"){
+    dialog.classList.add("dimmed");
+  }
+  n.clues.forEach(clue=>{
+    const h=document.createElement("div");
+    h.className="hotspot";        // hidden by default (no .shown)
+    h.style.left=clue.x+"%";
+    h.style.top=clue.y+"%";
+    h.dataset.id=clue.id;
+    h.innerHTML='<span class="lens"><i class="fa-solid fa-magnifying-glass"></i></span>';
+    h.onclick=()=>{ playZoomClick(); openZoom(clue,h); };
+    hotspotLayer.appendChild(h);
+  });
+  updateHuntBanner();
+}
+
+/* hint button reveals all not-yet-found clue markers */
+function revealClues(){
+  cluesRevealed=true;
+  [...hotspotLayer.children].forEach(h=>{
+    if(!h.classList.contains("found")&&!h.classList.contains("done"))h.classList.add("shown");
+  });
+  if(investigateNode)updateHuntBanner();
+  if(hubNode)updateHubBanner();
+}
+
+/* ===== Hub: free-exploration of the museum ===== */
+function startHub(n){
+  hubNode=n;
+  hotspotLayer.innerHTML="";
+  dialog.classList.add("dimmed");
+  n.targets.forEach(t=>{
+    const h=document.createElement("div");
+    h.className="hotspot hub-target";
+    if(hubVisited.has(t.id)) h.classList.add("done","shown");   // visited stays visible
+    h.style.left=t.x+"%";
+    h.style.top=t.y+"%";
+    h.dataset.id=t.id;
+    h.innerHTML='<span class="lens"><i class="fa-solid fa-magnifying-glass"></i></span>'+
+                '<span class="hub-label">'+t.label+'</span>';
+    h.onclick=()=>{
+      if(hubVisited.has(t.id))return;     // already done; soft no-op
+      playZoomClick();
+      render(t.goto);
+    };
+    hotspotLayer.appendChild(h);
+  });
+  updateHubBanner();
+}
+
+function updateHubBanner(){
+  const total=hubNode.targets.length;
+  const got=hubVisited.size;
+  const tail = cluesRevealed ? "" : " &nbsp;·&nbsp; 화면을 클릭해 조사 지점을 찾으세요";
+  huntBanner.innerHTML=`<i class="fa-solid fa-binoculars"></i> 박물관 탐색 — 조사 완료 <b>${got} / ${total}</b>${tail}`;
+  huntBanner.classList.add("show");
+}
+
+function updateHuntBanner(){
+  const total=investigateNode.clues.length;
+  const got=foundClues.size;
+  if(got<total){
+    const tail = cluesRevealed ? "" : " &nbsp;·&nbsp; 현장을 클릭해 찾으세요";
+    huntBanner.innerHTML=`<i class="fa-solid fa-camera"></i> 카메라 줌인 — 단서 <b>${got} / ${total}</b> 관찰${tail}`;
+    huntBanner.classList.add("show");
+  }else{
+    huntBanner.classList.remove("show");
+  }
+}
+
+function openZoom(clue,hotspotEl){
+  // magnified background: same image, zoomed onto the clue point
+  zoomFrame.style.backgroundImage=investigateNode.art;
+  zoomFrame.style.backgroundPosition=clue.bx+"% "+clue.by+"%";
+  zoomName.textContent=clue.name;
+  zoomObs.innerHTML=clue.obs;
+  zoomEl.classList.add("show");
+  // mark as found — found markers stay visible so progress is clear
+  foundClues.add(clue.id);
+  hotspotEl.classList.add("found","shown");
+}
+
+function closeZoom(){
+  zoomEl.classList.remove("show");
+  updateHuntBanner();
+  // all clues inspected -> reveal conclusion + proceed
+  if(investigateNode && foundClues.size===investigateNode.clues.length){
+    finishInvestigation(investigateNode);
+  }
+}
+zoomEl.addEventListener("click",e=>{ if(e.target===zoomEl)closeZoom(); });
+
+function finishInvestigation(n){
+  const node=n;            // capture
+  hotspotLayer.innerHTML="";
+  dialog.classList.remove("dimmed");   // bring the dialog back for the conclusion
+
+  // A-mode: after observing clues, grammar choices appear in the SAME scene
+  if(node.invMode==="inspect-then-choose"){
+    pendingHTML=node.afterText;
+    pendingShowChoices=function(){
+      speaker.textContent=node.questionSpeaker||node.speaker;
+      choicesEl.style.display="flex";
+      choicesEl.innerHTML="";
+      node.choices.forEach(c=>choicesEl.appendChild(makeChoice(c)));
+    };
+    typeText(node.afterText, showChoicesNow);
+    return;
+  }
+
+  // B-mode (collect): conclusion text, then a single proceed button
+  pendingHTML=node.afterText;
+  pendingShowChoices=function(){
+    choicesEl.style.display="flex";
+    choicesEl.innerHTML="";
+    choicesEl.appendChild(makeChoice({label:node.proceedLabel,proceed:true,next:node.next}));
+  };
+  typeText(node.afterText, showChoicesNow);
+}
+
+/* ---- boss: clue chips ----
+   Accepts either plain strings or objects:
+     { text, missing?:bool, reveal?:string }
+   A "missing" clue renders as a torn card with partial letters & ? badge.    */
+function buildClues(clues, scrambleWords){
+  clueWords.innerHTML="";
+  if(scrambleWords && scrambleWords.length){
+    window.scrambleSlots=[null,null];
+    const sentence=document.createElement("div");
+    sentence.className="scramble-sentence";
+    const fixedBefore=document.createElement("span");
+    fixedBefore.className="scramble-fixed";
+    fixedBefore.textContent="The museum director";
+    sentence.appendChild(fixedBefore);
+    [0,1].forEach(i=>{
+      const slot=document.createElement("button");
+      slot.type="button";
+      slot.className="scramble-slot";
+      slot.dataset.slot=String(i);
+      slot.textContent="빈칸";
+      slot.onclick=()=>{
+        if(window.scrambleSlots[i]){
+          window.scrambleSlots[i]=null;
+          renderScramble();
+        }
+      };
+      sentence.appendChild(slot);
+      const fixed=document.createElement("span");
+      fixed.className="scramble-fixed";
+      fixed.textContent=i===0?"his staff":"the diamond";
+      sentence.appendChild(fixed);
+    });
+    clueWords.appendChild(sentence);
+    const help=document.createElement("div");
+    help.className="scramble-help";
+    help.textContent="두 단어를 눌러 빈칸에 순서대로 배치하세요. 다시 누르면 되돌아갑니다.";
+    clueWords.appendChild(help);
+    const pool=document.createElement("div");
+    pool.className="scramble-pool";
+    clueWords.appendChild(pool);
+    window.renderScramble=()=>{
+      const slots=[...sentence.querySelectorAll(".scramble-slot")];
+      slots.forEach((slot,i)=>{
+        slot.textContent=window.scrambleSlots[i]||"빈칸";
+        slot.classList.toggle("filled",!!window.scrambleSlots[i]);
+      });
+      pool.innerHTML="";
+      scrambleWords.forEach(word=>{
+        const card=document.createElement("button");
+        card.type="button";
+        card.className="scramble-card"+(window.scrambleSlots.includes(word)?" used":"");
+        card.textContent=word;
+        card.disabled=window.scrambleSlots.includes(word);
+        card.onclick=()=>{
+          const empty=window.scrambleSlots.indexOf(null);
+          if(empty!==-1){window.scrambleSlots[empty]=word;window.renderScramble();}
+        };
+        pool.appendChild(card);
+      });
+    };
+    window.renderScramble();
+    return;
+  }
+  clues.forEach(c=>{
+    const w = typeof c === "string" ? {text:c} : c;
+    const s = document.createElement("span");
+    s.className = "clue" + (w.missing?" missing":"") + (w.verb?" verb":"");
+    if(w.missing){
+      const partial = w.reveal || "";
+      const chars = [...partial].map(ch =>
+        ch === "_" ? " " : `<span class="redacted">${ch}</span>`
+      ).join("");
+      s.innerHTML = chars + '<span class="qmark">?</span>';
+      s.title = "손상된 단서 — 직접 떠올려 채우세요";
+    }else if(w.verb){
+      s.innerHTML = w.text + '<span class="verb-tag">동사 원형</span>';
+      s.title = "동사 원형 — 수동태(was + 과거분사)로 직접 변환하세요";
+    }else{
+      s.textContent = w.text;
+    }
+    clueWords.appendChild(s);
+  });
+}
+
+/* ---- boss timer ---- */
+function startTimer(){
+  timeLeft=30;
+  timerEl.textContent="00:30";
+  timerEl.classList.remove("danger");
+  timerInt=setInterval(()=>{
+    timeLeft--;
+    timerEl.textContent="00:"+String(Math.max(timeLeft,0)).padStart(2,"0");
+    if(timeLeft<=10)timerEl.classList.add("danger");
+    if(timeLeft<=0){
+      stopTimer();
+      render("bossWrong");   // time out -> wrong screen, then back to boss
+    }
+  },1000);
+}
+function stopTimer(){if(timerInt){clearInterval(timerInt);timerInt=null;}}
+
+/* ---- boss answer check (lenient: words only, ignore case & punctuation) ---- */
+function normalize(s){
+  // lowercase, strip all punctuation, collapse whitespace
+  return s.toLowerCase()
+          .replace(/[^a-z0-9\s]/g," ")
+          .replace(/\s+/g," ")
+          .trim();
+}
+function checkFinalAnswer(){
+  const n=STORY[current];
+  const slots=window.scrambleSlots||[];
+  const userCore=n.scrambleWords
+    ? normalize("The museum director " + (slots[0]||"") + " his staff " + (slots[1]||"") + " the diamond")
+    : normalize(finalInput.value);
+  const ansCore=normalize(n.answer);
+
+  if(userCore===ansCore){
+    stopTimer();
+    finalInput.blur();
+    render(n.next || "ending");
+  }else{
+    stopTimer();
+    render(current + "Wrong");
+  }
+}
+
+/* ---- hint modal ---- */
+$("hint-btn").onclick=()=>{
+  if(hintUsesLeft <= 0){
+    if(hintRemainingEl) hintRemainingEl.textContent = "남은 힌트카드: 0장";
+    hintText.textContent = "힌트카드를 모두 사용했습니다. 지금까지 확인한 단서와 대사를 다시 살펴보세요.";
+    hintModal.style.display="flex";
+    return;
+  }
+  hintUsesLeft--;
+  updateHintCards();
+  if(!hintText.textContent.trim()){
+    hintText.textContent = (typeof STORY !== "undefined" && STORY[current] && STORY[current].hint)
+      ? STORY[current].hint
+      : "현재 장면의 대사와 단서를 다시 살펴보세요.";
+  }
+  // during a clue hunt OR hub exploration, hint button reveals the markers
+  if(!cluesRevealed){
+    if(investigateNode && foundClues.size<investigateNode.clues.length){
+      revealClues();
+    }else if(hubNode && hubVisited.size<hubNode.targets.length){
+      revealClues();
+    }
+  }
+  hintModal.style.display="flex";
+};
+function closeHint(){hintModal.style.display="none";}
+hintModal.onclick=e=>{if(e.target===hintModal)closeHint();};
+
+/* ---- input events ---- */
+$("submit-btn").onclick=checkFinalAnswer;
+finalInput.addEventListener("keypress",e=>{
+  if(e.key==="Enter"){e.preventDefault();checkFinalAnswer();}
+});
+
+
+/* ===== 3-strike system ===== */
+let wrongCount = 0;
+const MAX_WRONG = 3;
+
+function updateLifeCounter(){
+  const counter = document.getElementById("life-counter");
+  if(!counter) return;
+  const pips = counter.querySelectorAll(".pip");
+  // pips left-to-right = chances 1,2,3. Lose them right-to-left so the
+  // remaining chances stay grouped on the left.
+  pips.forEach((p, i)=>{
+    const chanceIndex = pips.length - i; // pip[0]=3rd, pip[1]=2nd, pip[2]=1st when filling right→left? we want left→right losing
+    // We'll lose left-to-right instead — simpler to read.
+    if(i < wrongCount) p.classList.add("lost");
+    else p.classList.remove("lost");
+  });
+}
+
+function showLifeCounter(){
+  const counter = document.getElementById("life-counter");
+  if(counter) counter.style.display = "flex";
+}
+function hideLifeCounter(){
+  const counter = document.getElementById("life-counter");
+  if(counter) counter.style.display = "none";
+}
+
+function registerWrongAnswer(){
+  wrongCount++;
+  updateLifeCounter();
+  const counter = document.getElementById("life-counter");
+  if(counter){
+    counter.classList.remove("flash");
+    // force reflow so the animation can replay
+    void counter.offsetWidth;
+    counter.classList.add("flash");
+  }
+  return wrongCount >= MAX_WRONG;
+}
+
+function showGameOver(){
+  stopTimer && stopTimer();
+  hideLifeCounter();
+  const go = document.getElementById("gameover-screen");
+  if(go){
+    go.classList.add("show");
+  }
+}
+
+function restartFromGameOver(){
+  // 1) reset all game state
+  wrongCount = 0;
+  updateLifeCounter();
+  stopTimer && stopTimer();
+  // clear hub/clue state
+  if(typeof hubVisited !== "undefined" && hubVisited && hubVisited.clear) hubVisited.clear();
+  if(typeof foundClues !== "undefined") foundClues = new Set();
+  if(window.boardState){
+    Object.assign(window.boardState,{brown:true,smith:false,tech:false,deputy:false,director:false,completed:false});
+  }
+  cluesRevealed = false;
+  investigateNode = null;
+  hubNode = null;
+
+  // 2) hide game-over screen
+  const go = document.getElementById("gameover-screen");
+  if(go) go.classList.remove("show");
+  hideLifeCounter();
+
+  // 3) bring the opening screen back + restart the BGM
+  const opening = document.getElementById("opening-screen");
+  if(opening){
+    opening.classList.remove("hidden");
+  }
+  startOpeningBGM();
+}
+
+/* ----- Wrap handleChoice to catch wrong-answer choices ----- */
+const _originalHandleChoice = handleChoice;
+handleChoice = function(c){
+  if(c && c.wrong){
+    const isOut = registerWrongAnswer();
+    if(isOut){
+      showGameOver();
+      return;
+    }
+  }
+  return _originalHandleChoice(c);
+};
+
+/* ----- Wrap checkFinalAnswer to catch boss wrong/timeout ----- */
+/* v2.4: also accept the answer without the leading article "the" — it's a
+   meaningful slip but still demonstrates the passive-voice transform we
+   actually care about. We let the student through but flag the missing
+   article so they learn to include it next time.                          */
+const _originalCheckFinalAnswer = checkFinalAnswer;
+
+function stripLeadingThe(s){
+  // remove a leading "the " from a normalized string (already lowercase,
+  // punctuation stripped). Safe because normalize() also collapses spaces.
+  return s.replace(/^the\s+/, "");
+}
+
+function showArticleNotice(){
+  // Lightweight inline toast inside the dialog area so we don't have to
+  // mutate the STORY graph just for a single hint.
+  let notice = document.getElementById("article-notice");
+  if(notice) notice.remove();
+  notice = document.createElement("div");
+  notice.id = "article-notice";
+  notice.innerHTML =
+    '<div class="an-tag">힌트</div>' +
+    '<div class="an-body">정답으로 인정되었지만, ' +
+    '<b>boss</b> 앞에는 정관사 <b>The</b>를 붙여야 해요. ' +
+    '특정한 그 다이아몬드를 가리키니까요.<br>' +
+    '<span class="an-correct">정답: <b>The boss made his staff steal the diamond.</b></span>' +
+    '</div>' +
+    '<button class="an-close" onclick="dismissArticleNotice()">확인</button>';
+  document.getElementById("stage").appendChild(notice);
+  // small entrance animation handled in CSS
+}
+
+function dismissArticleNotice(){
+  const notice = document.getElementById("article-notice");
+  if(notice){
+    notice.classList.add("hiding");
+    setTimeout(()=>{ if(notice.parentNode) notice.remove(); }, 350);
+  }
+}
+
+checkFinalAnswer = function(){
+  const n = STORY.boss;
+  const userCore = normalize(finalInput.value);
+  const ansCore = normalize(n.answer);                  // "the diamond was stolen by mr brown"
+  const ansNoArticle = stripLeadingThe(ansCore);        // "diamond was stolen by mr brown"
+
+  if(userCore === ansCore){
+    // Perfect answer
+    return _originalCheckFinalAnswer();
+  }else if(userCore === ansNoArticle){
+    // Accepted, but missing the leading article — flag it.
+    stopTimer();
+    timerEl.style.display = "none";
+    finalInput.blur();
+    showArticleNotice();
+    // Defer the ending render until the student dismisses the notice OR
+    // gives it ~4 seconds to read on its own — whichever comes first.
+    // We hand off control to dismissArticleNotice via a wrapper.
+    const goToEnding = ()=>{
+      const notice = document.getElementById("article-notice");
+      if(notice && notice.parentNode){
+        // user hasn't dismissed yet; tear it down ourselves
+        notice.classList.add("hiding");
+        setTimeout(()=>{ if(notice.parentNode) notice.remove(); render("ending"); }, 350);
+      }else{
+        render("ending");
+      }
+    };
+    // Re-bind the close button so dismissing also triggers the ending
+    setTimeout(()=>{
+      const btn = document.querySelector("#article-notice .an-close");
+      if(btn){
+        btn.onclick = ()=>{
+          dismissArticleNotice();
+          setTimeout(()=>render("ending"), 360);
+        };
+      }
+    }, 50);
+    return;
+  }else{
+    // genuinely wrong — count it before the screen swap
+    const isOut = registerWrongAnswer();
+    if(isOut){
+      stopTimer();
+      showGameOver();
+      return;
+    }
+    return _originalCheckFinalAnswer();
+  }
+};
+
+// Rebind the click handler after wrapping checkFinalAnswer so button clicks
+// and Enter key submissions use the same validation and strike logic.
+$("submit-btn").onclick = checkFinalAnswer;
+
+/* ----- Also catch timer-expiry which calls render("bossWrong") directly ----- */
+const _originalStartTimer = startTimer;
+startTimer = function(){
+  // We need to intercept the timeout path. Easiest: re-implement it here
+  // mirroring the original but counting wrongCount before render("bossWrong").
+  stopTimer();
+  timeLeft = 30;
+  timerEl.textContent = "00:30";
+  timerEl.classList.remove("danger");
+  timerInt = setInterval(()=>{
+    timeLeft--;
+    timerEl.textContent = "00:" + String(Math.max(timeLeft,0)).padStart(2,"0");
+    if(timeLeft <= 10) timerEl.classList.add("danger");
+    if(timeLeft <= 0){
+      stopTimer();
+      const isOut = registerWrongAnswer();
+      if(isOut){
+        showGameOver();
+        return;
+      }
+      render("bossWrong");
+    }
+  }, 1000);
+};
+
+
+/* ===== Celebration: confetti + fireworks on the ending screen ===== */
+function launchCelebration(){
+  const layer = document.getElementById("confetti-layer");
+  if(!layer) return;
+  layer.innerHTML = "";
+
+  // detect a small / low-power device — halve the particle counts there so
+  // older phones don't drop frames during the finale
+  const isMobile = window.innerWidth <= 640 ||
+                   ('ontouchstart' in window && window.innerWidth <= 900);
+
+  const colors = [
+    "#e23048",  // case-red
+    "#d8a657",  // gold
+    "#6b8cae",  // case-blue
+    "#ffffff",
+    "#bfe3f0",  // diamond light blue
+    "#7fd1ff",
+    "#ffd84d",
+    "#ff8fb1"
+  ];
+
+  // ----- Confetti rain (continuous-ish stream for ~5s) -----
+  const totalConfetti = isMobile ? 45 : 90;
+  for(let i = 0; i < totalConfetti; i++){
+    const piece = document.createElement("div");
+    piece.className = "confetti";
+    piece.style.left = (Math.random() * 100) + "%";
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = (6 + Math.random() * 8) + "px";
+    piece.style.height = (10 + Math.random() * 8) + "px";
+    piece.style.animationDuration = (2.4 + Math.random() * 2.6) + "s";
+    piece.style.animationDelay = (Math.random() * 4) + "s";
+    // small rotation tilt so pieces aren't all axis-aligned
+    piece.style.transform = "rotate(" + (Math.random() * 360) + "deg)";
+    layer.appendChild(piece);
+  }
+
+  // ----- Firework bursts: bursts, staggered, at random positions -----
+  function burst(cx, cy, color){
+    const sparks = isMobile ? 10 : 18;
+    for(let i = 0; i < sparks; i++){
+      const s = document.createElement("div");
+      s.className = "firework";
+      s.style.left = cx + "%";
+      s.style.top = cy + "%";
+      s.style.background = color;
+      s.style.boxShadow = "0 0 8px " + color;
+      const angle = (Math.PI * 2 * i) / sparks + (Math.random() * 0.3);
+      const dist = 80 + Math.random() * 60;
+      s.style.setProperty("--fx", Math.cos(angle) * dist + "px");
+      s.style.setProperty("--fy", Math.sin(angle) * dist + "px");
+      s.style.animationDuration = (0.9 + Math.random() * 0.6) + "s";
+      layer.appendChild(s);
+      setTimeout(() => { if(s.parentNode) s.remove(); }, 1500);
+    }
+  }
+
+  // On mobile, use fewer burst spots to keep the scene from being too busy
+  const burstSpots = isMobile
+    ? [[25, 32], [75, 30], [50, 22], [30, 50], [70, 48]]
+    : [[22, 30], [78, 28], [50, 18], [30, 50], [70, 48], [15, 42], [85, 40]];
+  burstSpots.forEach((spot, idx) => {
+    setTimeout(() => {
+      const c = colors[Math.floor(Math.random() * colors.length)];
+      burst(spot[0], spot[1], c);
+    }, idx * 500);
+  });
+
+  // Repeat the firework cycle a few times (fewer on mobile)
+  const cycles = isMobile ? 2 : 3;
+  for(let cycle = 1; cycle <= cycles; cycle++){
+    setTimeout(() => {
+      burstSpots.forEach((spot, idx) => {
+        setTimeout(() => {
+          const c = colors[Math.floor(Math.random() * colors.length)];
+          // slight position jitter for variety
+          const jx = spot[0] + (Math.random() * 10 - 5);
+          const jy = spot[1] + (Math.random() * 10 - 5);
+          burst(jx, jy, c);
+        }, idx * 400);
+      });
+    }, cycle * 3500);
+  }
+
+  // Play a celebratory chime
+  playWinChime();
+}
+
+
+function playDing() {
+  const ctx = _getAudioContext();
+  if(!ctx || ctx.state === "suspended") return;
+  const now = ctx.currentTime;
+  
+  const osc1 = ctx.createOscillator();
+  osc1.type = "sine";
+  osc1.frequency.value = 880; 
+  const g1 = ctx.createGain();
+  g1.gain.setValueAtTime(0, now);
+  g1.gain.linearRampToValueAtTime(0.2, now + 0.02);
+  g1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+  osc1.connect(g1); g1.connect(ctx.destination);
+  osc1.start(now); osc1.stop(now + 0.35);
+
+  const osc2 = ctx.createOscillator();
+  osc2.type = "sine";
+  osc2.frequency.value = 1046.50; 
+  const g2 = ctx.createGain();
+  g2.gain.setValueAtTime(0, now + 0.15);
+  g2.gain.linearRampToValueAtTime(0.2, now + 0.17);
+  g2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+  osc2.connect(g2); g2.connect(ctx.destination);
+  osc2.start(now + 0.15); osc2.stop(now + 0.5);
+}
+
+function playPop() {
+  const ctx = _getAudioContext();
+  if(!ctx || ctx.state === "suspended") return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(600, now);
+  osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.15, now + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+  osc.connect(g); g.connect(ctx.destination);
+  osc.start(now); osc.stop(now + 0.15);
+}
+
+/* Synthesized win chime: rising arpeggio + sparkle high notes */
+function playWinChime(){
+  const ctx = _getAudioContext();
+  if(!ctx) return;
+  if(ctx.state === "suspended") ctx.resume().catch(()=>{});
+  const now = ctx.currentTime;
+
+  // Major arpeggio: C E G C E G (rising)
+  const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+  notes.forEach((freq, i) => {
+    const t = now + i * 0.12;
+    const osc = ctx.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.18, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(t); osc.stop(t + 0.6);
+  });
+
+  // Final shimmer chord
+  const chord = [1046.50, 1318.51, 1567.98, 2093.00];
+  chord.forEach((freq) => {
+    const t = now + 0.85;
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.12, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(t); osc.stop(t + 2.0);
+  });
+}
+
+/* ----- Show the life counter once the game proper begins ----- */
+const _originalRender = render;
+render = function(id, opts){
+  const result = _originalRender(id, opts);
+  // The opening screen sets id="start" as the first real game node.
+  // From "start" onward, expose the life counter. Hide it on win/end screens.
+  if(id === "ending" || id === "win"){
+    hideLifeCounter();
+    // Trigger the diamond shimmer + confetti once the scene fades in
+    setTimeout(()=>{ launchCelebration(); }, 400);
+  }else if(id && id !== "start"){
+    showLifeCounter();
+  }else if(id === "start"){
+    showLifeCounter();
+  }
+  return result;
+};
+
+
+/* ---- start ---- */
+function startGameFromOpening(e){
+  if(e){ e.stopPropagation(); }
+  const opening = document.getElementById("opening-screen");
+  if(!opening || opening.classList.contains("hidden")) return;
+  // Hide any stale end-of-game dialog before the opening curtain lifts.
+  const staleDialog = document.getElementById("dialog");
+  if(staleDialog){ staleDialog.style.visibility = "hidden"; staleDialog.style.display = "none"; }
+  // Reset 3-strike state every time we (re)start from the opening
+  wrongCount = 0;
+  updateLifeCounter();
+  // Fade out the opening soundtrack — game-time has its own tension.
+  stopOpeningBGM();
+  // Render the first scene while the opening curtain is still covering the game,
+  // so the previous summary can never flash during the transition.
+  // Clear stale summary content synchronously before rendering the first scene.
+  const staleText = document.getElementById("dialog-text");
+  const staleChoices = document.getElementById("choices");
+  if(staleText) staleText.innerHTML = "";
+  if(staleChoices) staleChoices.innerHTML = "";
+  render("start");
+  if(staleDialog){ staleDialog.style.display = "block"; staleDialog.style.visibility = "visible"; }
+  opening.classList.add("hidden");
+}
+
+/* ----- Kick off opening BGM as soon as we can ----- */
+function _tryStartOpeningBGM(){
+  const opening = document.getElementById("opening-screen");
+  if(!opening || opening.classList.contains("hidden")) return;
+  startOpeningBGM();
+}
+// Try immediately (works if AudioContext is allowed without gesture)
+window.addEventListener("load", ()=>{ setTimeout(_tryStartOpeningBGM, 300); });
+// And on the first user interaction (covers strict autoplay browsers)
+const _bgmKickoff = ()=>{
+  _tryStartOpeningBGM();
+  document.removeEventListener("click", _bgmKickoff, true);
+  document.removeEventListener("keydown", _bgmKickoff, true);
+  document.removeEventListener("touchstart", _bgmKickoff, true);
+  document.removeEventListener("pointerdown", _bgmKickoff, true);
+  document.removeEventListener("mousemove", _bgmKickoff, true);
+};
+document.addEventListener("click", _bgmKickoff, true);
+document.addEventListener("keydown", _bgmKickoff, true);
+document.addEventListener("touchstart", _bgmKickoff, true);
+document.addEventListener("pointerdown", _bgmKickoff, true);
+document.addEventListener("mousemove", _bgmKickoff, true);
+// Allow Enter / Space from the keyboard to start as well
+document.addEventListener("keydown", function openingKey(e){
+  const opening = document.getElementById("opening-screen");
+  if(!opening || opening.classList.contains("hidden")) return;
+  if(e.key === "Enter" || e.key === " "){
+    e.preventDefault();
+    startGameFromOpening();
+  }
+});
+
+  /* Use the previously produced case artwork after matching each file to its actual scene. */
+  const CASE_ART = {
+    brownEarly: "url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==')",
+    brownLate: "url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==')",
+    smithCctv: "url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==')",
+    smith: "url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==')",
+    deputyEarly: "url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==')",
+    deputyLate: "url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==')",
+    // No previously produced image depicts the boss, so keep the designed fallback art.
+    director: ART.director,
+    letter: ART.desk
+  };
+
+  const applyCaseArt = (ids, art) => ids.forEach(id => {
+    if(STORY[id]) STORY[id].art = art;
+  });
+
+  // 익명의 제보: 기존 데스크 아트, FILE.01: 브라운의 신발 심문
+  applyCaseArt(["prologue"], CASE_ART.letter);
+  applyCaseArt(["file01", "file01_2", "file01_3"], CASE_ART.brownEarly);
+  applyCaseArt(["file01_4", "file01_5", "file01_6", "file01_7", "w1"], CASE_ART.brownLate);
+
+  // FILE.02: CCTV 장면에서 스미스의 심문으로 전환
+  applyCaseArt(["file02"], CASE_ART.smithCctv);
+  applyCaseArt(["file02_2", "file02_3", "file02_4", "w2_let", "w2_make", "file02_5", "file02_6", "file02_7", "w3"], CASE_ART.smith);
+
+  // FILE.03: 부관장 김의 증언
+  applyCaseArt(["file03", "file03_2"], CASE_ART.deputyEarly);
+  applyCaseArt(["file03_3", "file03_4", "file03_5", "w4"], CASE_ART.deputyLate);
+
+  // FILE.05는 전용 관장 이미지가 없으므로 기존 관장 아트를 유지한다.
+  applyCaseArt(["file05", "file05_2", "file05_3", "w5", "final_analysis", "boss", "bossWrong"], CASE_ART.director);
+
+  // Keep these names available to any evidence-board or later scene hooks.
+  ART.caseBrownEarly = CASE_ART.brownEarly;
+  ART.caseBrownLate = CASE_ART.brownLate;
+  ART.caseSmithCctv = CASE_ART.smithCctv;
+  ART.caseSmith = CASE_ART.smith;
+  ART.caseDeputyEarly = CASE_ART.deputyEarly;
+  ART.caseDeputyLate = CASE_ART.deputyLate;
+
+  // Compatibility aliases used by the evidence-board renderer.
+  ART.corkboard = ART.investigation_board || CASE_ART.smithCctv;
+  ART.brown_scene1 = CASE_ART.brownEarly;
+  ART.smith_scene1 = CASE_ART.smithCctv;
+  ART.deputy = CASE_ART.deputyEarly;
+  ART.tech = CASE_ART.smith;
+
+</script>
+
+
+
+
+
+
+
+
+<!-- 통합 삽입: 최종 Make·Have·Let 보충 게임 -->
+<style>
+#final-review-launch{position:fixed;right:18px;bottom:18px;z-index:9999;border:1px solid #d8a657;background:#151521;color:#f7e5b3;border-radius:999px;padding:11px 16px;font:700 13px 'Noto Sans KR',sans-serif;letter-spacing:.2px;box-shadow:0 8px 24px #0008;cursor:pointer;transition:.2s}
+#final-review-launch:hover{transform:translateY(-2px);background:#2a2030;border-color:#ffcf74}
+body:has(#opening-screen:not(.hidden)) #final-review-launch{display:none !important}
+#final-review-modal{display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.86);backdrop-filter:blur(4px)}
+#final-review-modal.open{display:flex}
+#final-review-shell{position:relative;width:min(980px,100%);height:min(880px,96vh);display:flex;align-items:center;justify-content:center}
+#final-review-frame{width:100%;height:100%;border:0;border-radius:8px;background:#000;box-shadow:0 24px 90px #000}
+#final-review-close{position:absolute;top:-10px;right:-10px;width:34px;height:34px;border:1px solid #ff6a7a;border-radius:50%;background:#1a1018;color:#fff;font-size:22px;line-height:1;cursor:pointer;z-index:2}
+@media(max-width:640px){#final-review-launch{right:10px;bottom:10px;padding:9px 12px;font-size:12px}#final-review-modal{padding:8px}#final-review-shell{height:98vh}#final-review-close{top:2px;right:2px}}
+</style>
+<button id="final-review-launch" type="button">📚 Make·Have·Let 문맥 확장 실험실</button>
+<div id="final-review-modal" role="dialog" aria-modal="true" aria-label="Make Have Let 문맥 확장 실험실">
+  <div id="final-review-shell">
+    <button id="final-review-close" type="button" aria-label="닫기">×</button>
+    <iframe id="final-review-frame" title="Make Have Let 문맥 확장 실험실"></iframe>
+  </div>
+</div>
+
+
+
+<script id="mystery-sound-script">
+(function(){
+  var STORAGE_KEY = 'maek-mystery-sound-enabled';
+  var soundEnabled = localStorage.getItem(STORAGE_KEY) !== '0';
+  var originalStart = window.startOpeningBGM;
+  var originalStop = window.stopOpeningBGM;
+  var originalDing = window.playDing;
+  var originalPop = window.playPop;
+  var originalZoom = window.playZoomClick;
+  var originalType = window.playTypeSound;
+  var originalVibration = window.playVibration;
+  var originalWin = window.playWinChime;
+  var originalWrongAnswer = window.registerWrongAnswer;
+  var originalHandleChoice = window.handleChoice;
+
+  function getCtx(){
+    try { return typeof _getAudioContext === 'function' ? _getAudioContext() : null; }
+    catch(e){ return null; }
+  }
+  function wake(ctx){ if(ctx && ctx.state === 'suspended') ctx.resume().catch(function(){}); }
+  function setToggleState(){
+    var btn = document.getElementById('sound-toggle');
+    if(!btn) return;
+    btn.textContent = soundEnabled ? '사운드 ON' : '사운드 OFF';
+    btn.classList.toggle('is-off', !soundEnabled);
+    btn.setAttribute('aria-pressed', String(soundEnabled));
+    btn.title = soundEnabled ? '사운드 끄기' : '사운드 켜기';
+  }
+  function tone(freq, duration, type, volume, endFreq){
+    if(!soundEnabled) return;
+    var ctx = getCtx(); if(!ctx) return; wake(ctx);
+    var now = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+    if(endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(volume || 0.12, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now); osc.stop(now + duration + 0.03);
+  }
+  function playUiClick(){ tone(520, 0.075, 'sine', 0.075, 390); }
+  function playSelectTick(){
+    tone(660, 0.11, 'triangle', 0.11);
+    setTimeout(function(){ tone(990, 0.16, 'triangle', 0.07); }, 55);
+  }
+  function playWrongBuzz(){
+    if(!soundEnabled) return;
+    var ctx = getCtx(); if(!ctx) return; wake(ctx);
+    var now = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    var filter = ctx.createBiquadFilter();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(145, now);
+    osc.frequency.exponentialRampToValueAtTime(62, now + 0.34);
+    filter.type = 'lowpass'; filter.frequency.value = 700;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.2, now + 0.018);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+    osc.connect(filter).connect(gain).connect(ctx.destination);
+    osc.start(now); osc.stop(now + 0.42);
+  }
+  function playHintTone(){
+    tone(784, 0.16, 'sine', 0.08);
+    setTimeout(function(){ tone(1175, 0.24, 'sine', 0.065); }, 95);
+  }
+  window.setGameSound = function(enabled){
+    soundEnabled = !!enabled;
+    localStorage.setItem(STORAGE_KEY, soundEnabled ? '1' : '0');
+    if(!soundEnabled){ if(typeof originalStop === 'function') originalStop(); }
+    else {
+      var opening = document.getElementById('opening-screen');
+      if(opening && !opening.classList.contains('hidden') && typeof originalStart === 'function') originalStart();
+      else { var ctx = getCtx(); wake(ctx); }
+    }
+    setToggleState();
+  };
+  window.isGameSoundEnabled = function(){ return soundEnabled; };
+  if(typeof originalStart === 'function') window.startOpeningBGM = function(){ if(soundEnabled) return originalStart.apply(this, arguments); };
+  if(typeof originalDing === 'function') window.playDing = function(){ if(soundEnabled) return originalDing.apply(this, arguments); };
+  if(typeof originalPop === 'function') window.playPop = function(){ if(soundEnabled) return originalPop.apply(this, arguments); };
+  if(typeof originalZoom === 'function') window.playZoomClick = function(){ if(soundEnabled) return originalZoom.apply(this, arguments); };
+  if(typeof originalType === 'function') window.playTypeSound = function(){ if(soundEnabled) return originalType.apply(this, arguments); };
+  if(typeof originalVibration === 'function') window.playVibration = function(){ if(soundEnabled) return originalVibration.apply(this, arguments); };
+  if(typeof originalWin === 'function') window.playWinChime = function(){ if(soundEnabled) return originalWin.apply(this, arguments); };
+  if(typeof originalWrongAnswer === 'function') window.registerWrongAnswer = function(){
+    var result = originalWrongAnswer.apply(this, arguments);
+    playWrongBuzz();
+    return result;
+  };
+  if(typeof originalHandleChoice === 'function') window.handleChoice = function(c){
+    if(c && (c.proceed || c.correct)) playSelectTick();
+    return originalHandleChoice.apply(this, arguments);
+  };
+  var toggle = document.createElement('button');
+  toggle.id = 'sound-toggle'; toggle.type = 'button';
+  toggle.setAttribute('aria-label', '게임 사운드 켜기 또는 끄기');
+  toggle.addEventListener('click', function(e){
+    e.stopPropagation(); window.setGameSound(!soundEnabled);
+    if(soundEnabled) playSelectTick();
+  });
+  document.body.appendChild(toggle);
+  setToggleState();
+
+  document.addEventListener('click', function(e){
+    if(!soundEnabled) return;
+    var target = e.target.closest && e.target.closest('button,[role="button"]');
+    if(!target || target.id === 'sound-toggle' || target.classList.contains('choice') ||
+       target.classList.contains('hotspot') || target.id === 'submit-btn' ||
+       target.id === 'hint-btn' || target.id === 'gameover-restart') return;
+    playUiClick();
+  }, true);
+  var hintBtn = document.getElementById('hint-btn');
+  if(hintBtn) hintBtn.addEventListener('click', function(){ playHintTone(); }, true);
+  var submitBtn = document.getElementById('submit-btn');
+  if(submitBtn) submitBtn.addEventListener('click', function(){ tone(430, 0.1, 'triangle', 0.08, 560); }, true);
+})();
+</script><button id="sound-toggle" type="button" aria-label="게임 사운드 켜기 또는 끄기" aria-pressed="true" title="사운드 끄기">사운드 ON</button><!-- FINAL CONTEXT IMAGE PATCH 20261023 -->
+<script id="final-context-image-patch">
+(() => {
+  const smithChain = "url('smith_cctv_chain_consistent.png?v=20261023_3')";
+  const deputyChain = "url('deputy_command_chain_consistent.png?v=20261023_3')";
+  const deputyConfession = "url('deputy_confession_consistent.png?v=20261023_4')";
+  if (typeof ART !== 'undefined') {
+    ART.smith_scene1 = smithChain;
+    ART.smith_scene2 = smithChain;
+    ART.smith_scene3 = smithChain;
+    ART.smith_scene4 = smithChain;
+    ART.smith_scene5 = smithChain;
+    ART.deputy = deputyChain;
+    ART.caseSmith = smithChain;
+    ART.caseSmithCctv = smithChain;
+    ART.caseDeputyEarly = deputyChain;
+    ART.caseDeputyLate = deputyChain;
+  }
+  if (typeof STORY !== 'undefined') {
+    ['file02','file02_2','file02_3','file02_4','w2_let','w2_make'].forEach(k => { if (STORY[k]) STORY[k].art = smithChain; });
+    ['file03','file03_2','file03_3','file03_4','file03_5','w4'].forEach(k => { if (STORY[k]) STORY[k].art = deputyChain; });
+    if (STORY.file03) STORY.file03.art = deputyConfession;
+  }
+})();
+</script><script id="causative-context-repair-20261024">(() => {
+  const pressure = "url('scene_smith_brown_pressure.png?v=20261024_1')";
+  const haveScene = "url('scene_smith_technician_have.png?v=20261024_1')";
+  if (typeof STORY !== 'undefined') {
+    if (STORY.file01_5) STORY.file01_5.art = pressure;
+    if (STORY.file01_6) { STORY.file01_6.art = pressure; STORY.file01_6.text = "거절할 수 없었어요.<br><br><b>탐정 민호:</b> 왜?<br><br><b>브라운:</b> 스미스가 제 약점을 잡고 협박했어요. 거절하면 모든 걸 폭로하겠다고 했어요.<br><br><b>브라운:</b> 부관장이 저에게 직접 시킨 건 아니에요. 스미스가 직접 들어가면 들킬까 봐 저를 대신 이용한 것 같아요."; }
+    if (STORY.file01_7) STORY.file01_7.art = pressure;
+    if (STORY.file02_2) STORY.file02_2.art = haveScene;
+    if (STORY.file02_3) { STORY.file02_3.art = haveScene; STORY.file02_3.text = "부관장이 소개하며 믿고 맡기라고 했어요.<br><br><b>탐정 민호:</b> 그래서 스미스가 기술자에게 CCTV 수리 업무를 맡긴 거군."; }
+    if (STORY.file02_4) { STORY.file02_4.art = haveScene; STORY.file02_4.text = "<b>사건 일지의 빈칸을 채우세요.</b><br><br><b>Smith ___ the technician work on the CCTV.</b><br><br>스미스가 기술자에게 수리 업무를 맡긴 상황입니다."; STORY.file02_4.hint = "강압이 아니라 업무를 맡긴 상황이면 HAVE입니다."; }
+    if (STORY.w2_let) STORY.w2_let.art = haveScene;
+    if (STORY.w2_make) STORY.w2_make.art = haveScene;
+    if (STORY.file02_7) { STORY.file02_7.text = "<b>사건 일지의 빈칸을 채우세요.</b><br><br><b>The deputy ___ Smith hire the technician by threatening him.</b><br><br>이번 문장은 협박을 명시적으로 강조합니다."; STORY.file02_7.hint = "by threatening him이 있으므로 MAKE입니다."; }
+    if (STORY.file03_5) { STORY.file03_5.text = "<b>사건 일지의 빈칸을 채우세요.</b><br><br><b>The deputy ___ Smith hire the technician as part of his assigned duties.</b><br><br>이번 문장은 업무를 맡긴 사실을 중립적으로 기록합니다."; STORY.file03_5.hint = "업무 위임의 초점이면 HAVE입니다."; }
+  }
+})();</script><script id="causative-final-report-context-patch-20261024">
+(() => {
+  if (typeof STORY !== 'undefined' && STORY.boss) {
+    STORY.boss.text = "<b>[사건 수사 최종 보고]</b><br><br>단서를 종합해 관장과 직원들의 역할을 영어 문장으로 기록하세요.<br><br>주어: The boss<br>동사: make<br>목적어: his staff<br>행동: steal the diamond";
+    STORY.boss.hint = "최종 보고서에는 The boss made his staff steal the diamond.를 쓰세요. make 뒤의 목적어 다음에는 동사원형 steal이 옵니다.";
+  }
+  const frame = document.getElementById('final-review-frame');
+  if (!frame) return;
+  const patchFinalReport = () => {
+    try {
+      const doc = frame.contentDocument;
+      if (!doc || !doc.body) return;
+      const heading = doc.querySelector('.question h2');
+      if (!heading || !heading.textContent.includes('문장 전체 쓰기')) return;
+      heading.textContent = '최종 문제 | 사건 수사 최종 보고';
+      const intro = doc.querySelector('.question .small');
+      if (intro) intro.textContent = '사건 수사를 종결하고 최종 보고서를 작성하세요. 아래 사건 기록과 단서어를 보고, 보고서에 들어갈 영어 문장을 직접 완성합니다.';
+      const dialog = doc.querySelector('.card .dialog');
+      if (dialog && dialog.textContent.includes('이번에는 선택지가 없습니다')) dialog.textContent = '사건 수사 최종 보고서를 작성하세요. 관장과 직원들의 역할을 사역동사 문장으로 기록합니다.';
+      const lesson = doc.querySelector('.card .lesson');
+      if (lesson && lesson.textContent.includes('문장의 뜻을 먼저 정한 뒤')) lesson.innerHTML = '사건의 의미를 먼저 정한 뒤, 보고서에 필요한 사역동사와 뒤따르는 형태를 확인하세요.<br><b>시제는 스스로 판단하세요.</b> 이 보고서는 이미 일어난 사건을 기록하므로, 사건 기록의 시간과 보고서의 문맥을 살펴 동사의 형태를 결정하세요. 단서어의 make·have는 기본형으로 제시되어 있습니다.';
+      const labels = doc.querySelectorAll('.final-item label');
+      const reportLabels = [
+        '보고 1 | 관장은 직원들에게 다이아몬드를 훔치게 했다.<br>단서어: The boss / make / his staff / steal the diamond.<br><small>사건 기록의 시점을 생각해 동사의 형태를 결정하세요.</small>',
+        '보고 2 | 스미스는 기술자에게 CCTV 점검 업무를 맡겼다.<br>단서어: Smith / have / the technician / check the CCTV.<br><small>과거에 맡긴 일인지 문맥을 확인하세요.</small>',
+        '보고 3 | 스미스는 기술자가 통제실에 들어가도록 허락했다.<br>단서어: Smith / let / the technician / enter the control room.<br><small>허락한 시점을 생각해 보세요.</small>',
+        '보고 4 | 박물관은 CCTV를 수리받도록 조치했다.<br>단서어: The museum / have / the CCTV / repaired.<br><small>보고서가 기록하는 사건의 시점에 맞게 쓰세요.</small>'
+      ];
+      labels.forEach((label, i) => { if (reportLabels[i]) label.innerHTML = reportLabels[i]; });
+      const submit = doc.querySelector('.question .submit');
+      if (submit) submit.textContent = '최종 보고서 제출';
+    } catch (e) {}
+  };
+  frame.addEventListener('load', () => {
+    try {
+      const doc = frame.contentDocument;
+      if (doc && doc.body) new MutationObserver(patchFinalReport).observe(doc.body, {childList:true, subtree:true});
+    } catch (e) {}
+    patchFinalReport();
+  });
+  setInterval(patchFinalReport, 700);
+})();
+</script><script id="causative-final-report-answer-patch-20261024">
+(() => {
+  const frame = document.getElementById('final-review-frame');
+  if (!frame) return;
+  const answers = [
+    'the boss made his staff steal the diamond',
+    'smith had the technician check the cctv',
+    'smith let the technician enter the control room',
+    'the museum had the cctv repaired'
+  ];
+  const fixAnswers = () => {
+    try {
+      const doc = frame.contentDocument;
+      if (!doc || !doc.body) return;
+      const heading = doc.querySelector('.question h2');
+      if (!heading || !heading.textContent.includes('사건 수사 최종 보고')) return;
+      doc.querySelectorAll('.final-item input').forEach((input, i) => { if (answers[i]) input.dataset.answer = answers[i]; });
+    } catch (e) {}
+  };
+  frame.addEventListener('load', () => {
+    try { const doc = frame.contentDocument; if (doc && doc.body) new MutationObserver(fixAnswers).observe(doc.body, {childList:true, subtree:true}); } catch (e) {}
+    fixAnswers();
+  });
+  setInterval(fixAnswers, 700);
+})();
+</script><script id="story-coherence-patch-20261024">
+(() => {
+  const pressure = "url('scene_smith_brown_pressure.png?v=20261024_story')";
+  if (typeof STORY === 'undefined') return;
+  if (STORY.file01_5) {
+    STORY.file01_5.art = pressure;
+    STORY.file01_5.text = "<b>브라운:</b> 스미스가 신발을 신고 들어가 경보기를 끄라고 했어요.<br><br><b>탐정 민호:</b> 왜 거절하지 못했어?";
+  }
+  if (STORY.file01_6) {
+    STORY.file01_6.art = pressure;
+    STORY.file01_6.text = "거절할 수 없었어요.<br><br><b>탐정 민호:</b> 왜?<br><br><b>브라운:</b> 스미스가 제 약점을 잡고 협박했어요. 거절하면 모든 걸 폭로하겠다고 했어요.";
+    if (Array.isArray(STORY.file01_6.choices) && STORY.file01_6.choices[0]) STORY.file01_6.choices[0].next = 'file01_6b';
+  }
+  STORY.file01_6b = {
+    speaker: "청소부 브라운",
+    art: pressure,
+    file: "FILE.01 — 신발의 진실",
+    phase: 0,
+    text: "<b>탐정 민호:</b> 스미스가 혼자 시킨 일이라고 생각했나?<br><br><b>브라운:</b> 그때는 아무것도 몰랐어요. 저는 스미스가 준 신발을 신고, 시킨 대로 경보기를 끄러 들어갔을 뿐이에요.<br><br><b>탐정 민호:</b> 그렇다면 지금 확인할 수 있는 사실은?<br><br><b>브라운:</b> 스미스가 저를 강제로 움직였다는 사실이에요.",
+    choices: [{label: "사건 일지를 정리한다.", proceed: true, next: "file01_7"}]
+  };
+  if (STORY.file01_7) STORY.file01_7.art = pressure;
+  if (STORY.file02_6) {
+    STORY.file02_6.text = "<b>스미스:</b> 도박 빚을 갚지 않으면 감옥에 보내겠다고 협박했어요.<br><br><b>탐정 민호:</b> 부관장이 브라운에게 신발을 신기라고 직접 시킨 건가?<br><br><b>스미스:</b> 아니요. 기술자를 고용하라는 지시만 받았어요. 브라운은 제가 제 흔적을 숨기려고 이용했습니다.<br><br><b>탐정 민호:</b> 그래서 브라운을 강제로 움직였군.";
+  }
+})();
+</script><script id="make-have-boundary-patch-20261024">
+(() => {
+  if (typeof STORY !== 'undefined') {
+    // FILE.03에서는 부관장의 협박만 다룬다. HAVE 문항은 별도 중립 장면에서 연습한다.
+    if (STORY.file03_4) {
+      STORY.file03_4.choices = [{label: "다음 단서로 이동한다.", proceed: true, next: "hub", unlock: "director"}];
+    }
+    if (STORY.file03_5) {
+      STORY.file03_5.text = "<b>학습 정리</b><br><br>부관장이 스미스에게 선택의 여지 없이 시킨 일이므로 이 사건의 동사는 <b>made</b>입니다.<br><br><b>Have</b>는 협박이 없는 중립적인 업무 위임 상황에서 사용합니다.";
+      STORY.file03_5.hint = "부관장에게 협박받아 거절할 수 없었던 상황은 HAVE가 아니라 MAKE입니다.";
+    }
+  }
+  const frame = document.getElementById('final-review-frame');
+  if (!frame) return;
+  const patchLabContrast = () => {
+    try {
+      const doc = frame.contentDocument;
+      if (!doc || !doc.body) return;
+      const compare = doc.querySelector('.compare');
+      if (compare && compare.textContent.includes('같은 사건을 두 관점으로')) {
+        compare.innerHTML = '<div><b>강압 | MAKE</b><br>The deputy <b>made</b> Smith hire the technician.<br><span class="small">협박해 선택의 여지를 없앤 상황</span></div><div><b>중립적인 업무 위임 | HAVE</b><br>The manager <b>had</b> the technician check the alarm.<br><span class="small">협박 없이 일을 맡긴 상황</span></div>';
+      }
+      const dialog = doc.querySelector('.card .dialog');
+      if (dialog && dialog.textContent.includes('두 가지 초점')) {
+        dialog.textContent = '부관장이 스미스에게 한 일은 협박입니다. 따라서 이 사건에서는 MAKE를 사용합니다. HAVE는 별도의 중립적인 업무 위임 장면에서 연습합니다.';
+      }
+    } catch (e) {}
+  };
+  frame.addEventListener('load', () => {
+    try { const doc = frame.contentDocument; if (doc && doc.body) new MutationObserver(patchLabContrast).observe(doc.body, {childList:true, subtree:true}); } catch (e) {}
+    patchLabContrast();
+  });
+  setInterval(patchLabContrast, 700);
+})();
+</script><script id="let-context-story-patch-20261024">
+(() => {
+  if (typeof STORY === 'undefined') return;
+  const permission = "url('scene_smith_technician_let.png?v=20261024_letstory')";
+  const haveChoice = STORY.file02_4 && Array.isArray(STORY.file02_4.choices) && STORY.file02_4.choices.find(c => c.correct);
+  if (haveChoice) haveChoice.next = 'file02_let';
+  STORY.file02_let = {
+    speaker: "경비원 스미스",
+    art: permission,
+    file: "FILE.02 — CCTV의 비밀",
+    phase: 1,
+    text: "수리 업무를 맡긴 것과는 별개로, 저는 기술자가 통제실에 들어가 점검하도록 문을 열어 주었습니다.<br><br>억지로 시킨 게 아니라, 출입을 허락한 겁니다.",
+    choices: [{label: "계속 듣는다.", proceed: true, next: "file02_let_q"}]
+  };
+  STORY.file02_let_q = {
+    speaker: "탐정 민호",
+    art: permission,
+    file: "FILE.02 — CCTV의 비밀",
+    phase: 1,
+    text: "<b>사건 일지의 빈칸을 채우세요.</b><br><br><b>Smith ___ the technician enter the control room.</b><br><br>스미스는 기술자의 출입을 허락했습니다.",
+    hint: "허락하거나 막지 않은 상황이면 LET입니다.",
+    question: true,
+    choices: [
+      {tag: "A", label: "made", wrong: "let_wrong"},
+      {tag: "B", label: "had", wrong: "let_wrong"},
+      {tag: "C", label: "let", correct: true, next: "file02_5"}
+    ]
+  };
+  STORY.let_wrong = {
+    speaker: "탐정 민호",
+    cls: "wrong",
+    art: permission,
+    file: "FILE.02 — 문맥 오류",
+    phase: 1,
+    text: "이 장면은 협박도 업무 위임도 아니야. 스미스가 기술자의 출입을 허락했으므로 <b>let</b>이 맞아.",
+    hint: "허락 = LET",
+    choices: [{label: "다시 선택한다.", proceed: true, next: "file02_let_q"}]
+  };
+})();
+</script><script id="shoe-to-cctv-story-patch-20261024">
+(() => {
+  if (typeof STORY === 'undefined') return;
+  const bridgeArt = "url('scene_minho_shoe_cctv_link.png?v=20261024_bridge_female')";
+  const smithRevealArt = "url('scene_smith_cctv_reveal.png?v=20261024_reveal')";
+  const haveArt = "url('scene_smith_technician_have.png?v=20261024_have')";
+  if (STORY.file01_7 && Array.isArray(STORY.file01_7.choices)) {
+    const correct = STORY.file01_7.choices.find(c => c.correct);
+    if (correct) correct.next = 'file01_bridge';
+  }
+  STORY.file01_bridge = {
+    speaker: "탐정 민호",
+    art: bridgeArt,
+    file: "FILE.01 — 단서 연결",
+    phase: 0,
+    text: "브라운은 스미스가 준 신발을 신고 서비스 통로로 들어가 경보기를 껐다고 했다.<br><br>그런데 현장 기록을 보니, 브라운이 들어가기 직전에 CCTV가 끊겨 있었다.<br><br>누군가 감시를 먼저 막아야 브라운이 들키지 않고 움직일 수 있었던 것이다. 이제 CCTV를 맡은 사람을 확인해야 한다.",
+    choices: [{label: "사건 보드에서 스미스를 조사한다.", proceed: true, next: "hub"}]
+  };
+  if (STORY.file02) {
+    STORY.file02.art = smithRevealArt;
+    STORY.file02.text = "(스미스를 심문실로 부른다) 브라운이 들어가기 직전에 CCTV가 끊겼다. 그때 기술자를 불렀지?<br><br><b>경비원 스미스:</b> (고개를 떨군다) 네, 맞습니다. 하지만 제가 직접 카메라를 손상시킨 건 아니었어요.";
+  }
+  ['file02_2','file02_3','file02_5','file02_6','file02_7','w3'].forEach(k => { if (STORY[k]) STORY[k].art = smithRevealArt; });
+  ['file02_4','w2_let','w2_make'].forEach(k => { if (STORY[k]) STORY[k].art = haveArt; });
+  if (STORY.file02_2) STORY.file02_2.text = "전기 기술자를 불렀어요. 수리하는 척 CCTV를 칠했어요.<br><br><b>탐정 민호:</b> 그 기술자는 누구의 사람이었어?";
+})();
+</script>
+<a href="blob:null/bd2bcb66-98aa-4ef3-aa62-610995d0d42f" download="사역동사_방탈출_웹앱_원본복구.html"></a><script>(()=>{const q={report2:{speaker:'경찰청 복습 시스템',cls:'sys',art:"url('image_05.png?v=20261029_2')",file:'복습 1/4 | 신발의 진실',phase:4,text:'사진 단서를 보고 단어를 알맞은 순서로 배열하세요.<br><br>스미스는 브라운에게 신발을 신게 했습니다.',hint:'have + 사람 + 동사원형',isInput:true,scrambleWords:['wear the shoes','Brown','had','Smith'],answer:'Smith had Brown wear the shoes',next:'report3'},report3:{speaker:'경찰청 복습 시스템',cls:'sys',art:"url('smith_cctv_chain_consistent.png?v=20261029_2')",file:'복습 2/4 | CCTV의 비밀',phase:4,text:'사진 단서를 보고 단어를 알맞은 순서로 배열하세요.<br><br>스미스는 기술자가 통제실에 들어가도록 허락했습니다.',hint:'let + 사람 + 동사원형',isInput:true,scrambleWords:['enter the control room','the technician','let','Smith'],answer:'Smith let the technician enter the control room',next:'report4'},report4:{speaker:'경찰청 복습 시스템',cls:'sys',art:"url('deputy_command_chain_consistent.png?v=20261029_2')"||ART.smith,file:'복습 3/4 | 명령의 출처',phase:4,text:'사진 단서를 보고 단어를 알맞은 순서로 배열하세요.<br><br>부관장은 스미스에게 기술자를 고용하게 했습니다.',hint:'make + 사람 + 동사원형',isInput:true,scrambleWords:['hire the technician','Smith','made','The deputy'],answer:'The deputy made Smith hire the technician',next:'report5'},report5:{speaker:'경찰청 복습 시스템',cls:'sys',art:ART.smith,file:'복습 4/4 | CCTV 수리',phase:4,text:'사진 단서를 보고 단어를 알맞은 순서로 배열하세요.<br><br>스미스는 CCTV를 수리받도록 조치했습니다.',hint:'have + 사물 + 과거분사',isInput:true,scrambleWords:['repaired','the CCTV','had','Smith'],answer:'Smith had the CCTV repaired',next:'ending'}};Object.keys(q).forEach(k=>STORY[k]=q[k]);const old=render;render=function(k,o){window._scr=q[k];return old(k,o)};buildClues=function(){clueWords.innerHTML='';const n=STORY[current],words=n.scrambleWords||[],box=document.createElement('div');window._slots=[];box.className='scramble-pool';words.forEach(w=>{const b=document.createElement('button');b.className='scramble-card';b.textContent=w;b.onclick=()=>{if(window._slots.length<words.length)window._slots.push(w);b.disabled=true;out();};box.appendChild(b);});const out=()=>{const line=document.createElement('div');line.className='scramble-sentence';line.textContent=window._slots.join(' ')||'단어를 눌러 문장을 만드세요';clueWords.innerHTML='';clueWords.appendChild(line);clueWords.appendChild(box);};clueWords.appendChild(box);};const oldC=checkFinalAnswer;checkFinalAnswer=function(){const n=STORY[current];if(n&&n.scrambleWords){if((window._slots||[]).join(' ').toLowerCase()===n.answer.toLowerCase()){stopTimer();render(n.next);}else render('bossWrong');return;}oldC();};document.getElementById('submit-btn').onclick=checkFinalAnswer;})();</script></body></html>
+
+
+
+
+
+<script id="final-character-art-repair-20261029">
+(() => {
+  const smith = "url('smith_cctv_chain_consistent.png?v=20261029_1')";
+  const deputy = "url('deputy_command_chain_consistent.png?v=20261029_1')";
+  const director = "url('scene_curator_v2.png?v=20261023_1')";
+  if (typeof ART !== 'undefined') {
+    ART.smith_scene1 = smith; ART.smith_scene2 = smith; ART.smith_scene3 = smith;
+    ART.smith_scene4 = smith; ART.smith_scene5 = smith;
+    ART.deputy = deputy; ART.director = director;
+  }
+  if (typeof STORY !== 'undefined') {
+    ['file02','file02_2','file02_3','file02_4','file02_5','file02_6','file02_7','w2_let','w2_make'].forEach(k => { if (STORY[k]) STORY[k].art = smith; });
+    ['file03','file03_2','file03_3','file03_4','file03_5','w4'].forEach(k => { if (STORY[k]) STORY[k].art = deputy; });
+    ['file05','file05_2','file05_3','file05_4','boss','summary'].forEach(k => { if (STORY[k]) STORY[k].art = director; });
+  }
+})();
+</script>
+
+<style id="opening-dialog-overlap-fix">#opening-screen:not(.hidden) ~ #dialog{visibility:hidden!important}</style>
+
+<style id="opening-dialog-overlap-fix-2">body:has(#opening-screen:not(.hidden)) #dialog{visibility:hidden!important}</style>
+
+<script id="brown-art-repair-20261029">
+(() => {
+  const brownEarly = "url('image_05.png?v=20261029_1')";
+  const brownReveal = "url('image_06.png?v=20261029_1')";
+  if (typeof STORY !== 'undefined') {
+    ['file01','file01_2','file01_3','file01_4'].forEach(k => { if (STORY[k]) STORY[k].art = brownEarly; });
+    ['file01_5','file01_6','file01_7','w1'].forEach(k => { if (STORY[k]) STORY[k].art = brownReveal; });
+  }
+})();
+</script>
+
+
+
+
+
+
+<script id="curator-art-final-20261030">
+(() => {
+  const confrontation = "url('scene4_confrontation.png?v=20261030_1')";
+  const closed = "url('scene7_structure.png?v=20261030_1')";
+  if (typeof STORY === 'undefined') return;
+  ['file05','file05_2','file05_3','file05_4','w5','final_analysis','boss','bossWrong','summary'].forEach(k => { if (STORY[k]) STORY[k].art = confrontation; });
+  ['ending','win'].forEach(k => { if (STORY[k]) STORY[k].art = closed; });
+  if (typeof ART !== 'undefined') { ART.director = confrontation; ART.curator_shocked = confrontation; ART.ending_new = closed; }
+})();
+</script>
