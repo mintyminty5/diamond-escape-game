@@ -3655,6 +3655,9 @@ body:has(#opening-screen:not(.hidden)) #final-review-launch{display:none !import
     if(c && (c.proceed || c.correct)) playSelectTick();
     return originalHandleChoice.apply(this, arguments);
   };
+  document.addEventListener('pointerdown', function(){
+    try { var c = getCtx(); if(c && c.state === 'suspended') c.resume(); } catch(e) {}
+  }, true);
   var toggle = document.createElement('button');
   toggle.id = 'sound-toggle'; toggle.type = 'button';
   toggle.setAttribute('aria-label', '게임 사운드 켜기 또는 끄기');
