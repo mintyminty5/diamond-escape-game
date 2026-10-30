@@ -3658,6 +3658,9 @@ body:has(#opening-screen:not(.hidden)) #final-review-launch{display:none !import
   document.addEventListener('pointerdown', function(){
     try { var c = getCtx(); if(c && c.state === 'suspended') c.resume(); } catch(e) {}
   }, true);
+  document.addEventListener('touchstart', function(){
+    try { var c = getCtx(); if(c && c.state === 'suspended') c.resume(); } catch(e) {}
+  }, {capture:true, passive:true});
   var toggle = document.getElementById('sound-toggle');
   if(!toggle){
     toggle = document.createElement('button');
