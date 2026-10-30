@@ -3588,7 +3588,8 @@ body:has(#opening-screen:not(.hidden)) #final-review-launch{display:none !import
   }
   function tone(freq, duration, type, volume, endFreq){
     if(!soundEnabled) return;
-    var ctx = getCtx(); if(!ctx) return; wake(ctx);
+    var ctx = getCtx(); if(!ctx) return;
+    if(ctx.state === 'suspended'){ ctx.resume().then(function(){ tone(freq, duration, type, volume, endFreq); }).catch(function(){}); return; }
     var now = ctx.currentTime;
     var osc = ctx.createOscillator();
     var gain = ctx.createGain();
