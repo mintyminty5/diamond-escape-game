@@ -3658,14 +3658,17 @@ body:has(#opening-screen:not(.hidden)) #final-review-launch{display:none !import
   document.addEventListener('pointerdown', function(){
     try { var c = getCtx(); if(c && c.state === 'suspended') c.resume(); } catch(e) {}
   }, true);
-  var toggle = document.createElement('button');
-  toggle.id = 'sound-toggle'; toggle.type = 'button';
-  toggle.setAttribute('aria-label', '게임 사운드 켜기 또는 끄기');
+  var toggle = document.getElementById('sound-toggle');
+  if(!toggle){
+    toggle = document.createElement('button');
+    toggle.id = 'sound-toggle'; toggle.type = 'button';
+    toggle.setAttribute('aria-label', '게임 사운드 켜기 또는 끄기');
+    document.body.appendChild(toggle);
+  }
   toggle.addEventListener('click', function(e){
     e.stopPropagation(); window.setGameSound(!soundEnabled);
     if(soundEnabled) playSelectTick();
   });
-  document.body.appendChild(toggle);
   setToggleState();
 
   document.addEventListener('click', function(e){
