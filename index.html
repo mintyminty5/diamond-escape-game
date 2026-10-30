@@ -3670,6 +3670,7 @@ body:has(#opening-screen:not(.hidden)) #final-review-launch{display:none !import
     if(soundEnabled) playSelectTick();
   });
   document.querySelectorAll('#sound-toggle').forEach(function(btn, i){ if(i > 0) btn.remove(); });
+  setTimeout(function(){ document.querySelectorAll('#sound-toggle').forEach(function(btn, i){ if(i > 0) btn.remove(); }); }, 500);
   setToggleState();
 
   document.addEventListener('click', function(e){
