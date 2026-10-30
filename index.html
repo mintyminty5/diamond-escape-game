@@ -3669,6 +3669,7 @@ body:has(#opening-screen:not(.hidden)) #final-review-launch{display:none !import
     e.stopPropagation(); window.setGameSound(!soundEnabled);
     if(soundEnabled) playSelectTick();
   });
+  document.querySelectorAll('#sound-toggle').forEach(function(btn, i){ if(i > 0) btn.remove(); });
   setToggleState();
 
   document.addEventListener('click', function(e){
